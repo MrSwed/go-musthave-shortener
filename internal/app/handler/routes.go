@@ -1,0 +1,56 @@
+package handler
+
+import (
+	"errors"
+	"io"
+	"log"
+	"net/http"
+	"strings"
+)
+
+func (h *Handler) MakeShort() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		url := make([]byte, 2048)
+		if r.Body == http.NoBody {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Printf("No body ")
+			return
+		}
+		defer func() { _ = r.Body.Close() }()
+		if _, err := r.Body.Read(url); err != nil && !errors.Is(err, io.EOF) {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Error get body %s", err)
+			return
+		}
+		html, err := h.s.NewShort(string(url))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Error reate new short %s", err)
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusCreated)
+		if _, err := w.Write([]byte(html)); err != nil {
+			log.Printf("Error: %s", err)
+		}
+	}
+}
+
+func (h *Handler) GetShort() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := strings.Split(
+			strings.Trim(r.URL.Path, "/"), "/")
+
+		if len(params) > 1 {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if newUrl, err := h.s.GetFromShort(params[0]); err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else {
+			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+			return
+		}
+	}
+}

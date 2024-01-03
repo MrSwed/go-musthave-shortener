@@ -23,7 +23,7 @@ func NewMemStorage(r repository.MemStorage) *ShorterService {
 	return &ShorterService{r: r}
 }
 
-func (s *ShorterService) NewShort(url string) (newUrl string, err error) {
+func (s *ShorterService) NewShort(url string) (newURL string, err error) {
 	var sk config.ShortKey
 	for {
 		sk = helper.NewRandShorter().RandStringBytes()
@@ -32,7 +32,7 @@ func (s *ShorterService) NewShort(url string) (newUrl string, err error) {
 			break
 		}
 	}
-	newUrl = fmt.Sprintf("%s%s/%s", config.Scheme, config.Address, sk)
+	newURL = fmt.Sprintf("%s%s/%s", config.Scheme, config.Address, sk)
 	return
 }
 

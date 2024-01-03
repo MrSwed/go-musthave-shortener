@@ -45,11 +45,11 @@ func (h *Handler) GetShort() func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if newUrl, err := h.s.GetFromShort(params[0]); err != nil {
+		if newURL, err := h.s.GetFromShort(params[0]); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		} else {
-			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, newURL, http.StatusTemporaryRedirect)
 			return
 		}
 	}

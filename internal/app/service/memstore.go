@@ -37,10 +37,6 @@ func (s *ShorterService) NewShort(url string) (newUrl string, err error) {
 }
 
 func (s *ShorterService) GetFromShort(k string) (v string, err error) {
-	var vS config.ShortKey
-	for i := 0; i < config.ShortLen; i++ {
-		vS[i] = k[i]
-	}
-	v, err = s.r.GetFromShort(vS)
+	v, err = s.r.GetFromShort(config.ShortKey([]byte(k)))
 	return
 }

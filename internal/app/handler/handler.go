@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"log"
 	"net/http"
 
@@ -17,16 +16,15 @@ func NewHandler(s *service.Service) *Handler { return &Handler{s: s} }
 
 func (h *Handler) InitRoutes() *Handler {
 	h.r = http.NewServeMux()
-	//h.r.HandleFunc(config.MakeShortRoute, h.MakeShort()
-	h.r.HandleFunc(config.MakeShortRoute, func(w http.ResponseWriter, r *http.Request) {
+	//h.r.HandleFunc(config.ShortRoute, h.MakeShort()
+	h.r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			h.MakeShort()(w, r)
 		case http.MethodGet:
 			h.GetShort()(w, r)
-
 		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	})
 	return h

@@ -45,7 +45,12 @@ func (h *Handler) GetShort() func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if newURL, err := h.s.GetFromShort(params[0]); err != nil {
+		id := strings.TrimSpace(params[0])
+		if len(id) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if newURL, err := h.s.GetFromShort(id); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		} else {

@@ -67,6 +67,16 @@ func TestHandler_GetShort(t *testing.T) {
 			},
 		},
 		{
+			name: "Get some not exist 1",
+			args: args{
+				method: http.MethodGet,
+				path:   "/somepage/somepage",
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
 			name: "Get some exist",
 			args: args{
 				method: http.MethodGet,
@@ -157,7 +167,7 @@ func TestHandler_MakeShort(t *testing.T) {
 	type args struct {
 		method string
 		path   string
-		post   string
+		data   string
 	}
 	tests := []struct {
 		name string
@@ -169,14 +179,22 @@ func TestHandler_MakeShort(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				path:   "/",
-				post:   testURL,
+				data:   testURL,
 			},
 			want: want{
-				code: http.StatusCreated,
-				// todo fo next iter:
-				//  responseContain: ts.URL,
+				code:            http.StatusCreated,
 				responseContain: localURL,
 				//contentType:     "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "Post Main No body",
+			args: args{
+				method: http.MethodPost,
+				path:   "/",
+			},
+			want: want{
+				code: http.StatusBadRequest,
 			},
 		},
 	}
@@ -184,7 +202,7 @@ func TestHandler_MakeShort(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			req, err := http.NewRequest(test.args.method, ts.URL+test.args.path, strings.NewReader(test.args.post))
+			req, err := http.NewRequest(test.args.method, ts.URL+test.args.path, strings.NewReader(test.args.data))
 			require.NoError(t, err)
 
 			defer req.Context()

@@ -5,28 +5,25 @@ import (
 	"net/http"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	s *service.Service
-	r *http.ServeMux
+	r *gin.Engine
 }
 
 func NewHandler(s *service.Service) *Handler { return &Handler{s: s} }
 
 func (h *Handler) InitRoutes() *Handler {
-	h.r = http.NewServeMux()
-	//h.r.HandleFunc(config.ShortRoute, h.MakeShort()
-	h.r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.MakeShort()(w, r)
-		case http.MethodGet:
-			h.GetShort()(w, r)
-		default:
-			w.WriteHeader(http.StatusBadRequest)
-		}
+	h.r = gin.New()
+
+	h.r.NoRoute(func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusBadRequest)
 	})
+	rootRoute := h.r.Group("/")
+	rootRoute.POST("/", h.MakeShort())
+	rootRoute.GET("/:id", h.GetShort())
 	return h
 }
 

@@ -1,60 +1,42 @@
 package handler
 
 import (
-	"errors"
-	"io"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"strings"
 )
 
-func (h *Handler) MakeShort() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Body == http.NoBody {
-			w.WriteHeader(http.StatusBadRequest)
+func (h *Handler) MakeShort() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		url, err := c.GetRawData()
+		if len(url) == 0 {
+			c.AbortWithStatus(http.StatusBadRequest)
 			log.Printf("No body ")
 			return
 		}
-		defer func() { _ = r.Body.Close() }()
-		url, err := io.ReadAll(r.Body)
-		if err != nil && !errors.Is(err, io.EOF) {
-			w.WriteHeader(http.StatusInternalServerError)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
 			log.Printf("Error get body %s", err)
 			return
 		}
 		html, err := h.s.NewShort(string(url))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			c.AbortWithStatus(http.StatusInternalServerError)
 			log.Printf("Error reate new short %s", err)
 		}
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusCreated)
-		if _, err := w.Write([]byte(html)); err != nil {
-			log.Printf("Error: %s", err)
-		}
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(http.StatusCreated, html)
 	}
 }
 
-func (h *Handler) GetShort() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		params := strings.Split(
-			strings.Trim(r.URL.Path, "/"), "/")
-
-		if len(params) > 1 {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		id := strings.TrimSpace(params[0])
-		if len(id) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+func (h *Handler) GetShort() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		id := c.Param("id")
 		if newURL, err := h.s.GetFromShort(id); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		} else {
-			http.Redirect(w, r, newURL, http.StatusTemporaryRedirect)
+			c.Redirect(http.StatusTemporaryRedirect, newURL)
 			return
 		}
 	}

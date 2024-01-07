@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"os"
 	"strings"
 )
 
@@ -20,16 +21,30 @@ type Config struct {
 	Scheme        string
 }
 
-func NewConfig() *Config {
+func NewConfig(init ...bool) *Config {
 	c := &Config{ServerAddress, BaseURL, Scheme}
+	if len(init) > 0 && init[0] {
+		return c.withFlags().withEnv().cleanSchemes()
+	}
 	return c
 }
 
-func (c *Config) WithFlags() *Config {
+func (c *Config) withEnv() *Config {
+	serverAddress, baseURL := os.Getenv("SERVER_ADDRESS"), os.Getenv("BASE_URL")
+	if serverAddress != "" {
+		c.ServerAddress = serverAddress
+	}
+	if baseURL != "" {
+		c.BaseURL = baseURL
+	}
+	return c
+}
+
+func (c *Config) withFlags() *Config {
 	flag.StringVar(&c.ServerAddress, "a", c.ServerAddress, "Provide the address start server")
 	flag.StringVar(&c.BaseURL, "b", c.BaseURL, "Provide base address for short url")
 	flag.Parse()
-	return c.cleanSchemes()
+	return c
 }
 
 func (c *Config) cleanSchemes() *Config {

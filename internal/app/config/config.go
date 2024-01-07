@@ -33,9 +33,9 @@ func (c *Config) WithFlags() *Config {
 }
 
 func (c *Config) cleanSchemes() *Config {
-	c.ServerAddress = strings.TrimPrefix("http://", c.ServerAddress)
-	c.ServerAddress = strings.TrimPrefix("https://", c.ServerAddress)
-	c.BaseURL = strings.TrimPrefix("http://", c.BaseURL)
-	c.BaseURL = strings.TrimPrefix("https://", c.BaseURL)
+	c.ServerAddress = strings.TrimPrefix(c.ServerAddress, "http://")
+	c.ServerAddress = strings.TrimPrefix(c.ServerAddress, "https://")
+	c.BaseURL = strings.TrimPrefix(c.BaseURL, "http://")
+	c.BaseURL = strings.TrimPrefix(c.BaseURL, "https://")
 	return c
 }

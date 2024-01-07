@@ -19,7 +19,7 @@ type ShorterService struct {
 	r repository.MemStorage
 }
 
-func NewMemStorage(r repository.MemStorage) *ShorterService {
+func NewShorterService(r repository.MemStorage) *ShorterService {
 	return &ShorterService{r: r}
 }
 

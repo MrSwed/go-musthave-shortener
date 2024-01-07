@@ -7,5 +7,5 @@ type Service struct {
 }
 
 func NewService(r repository.MemStorage) *Service {
-	return &Service{Shorter: NewMemStorage(r)}
+	return &Service{Shorter: NewShorterService(r)}
 }

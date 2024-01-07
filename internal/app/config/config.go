@@ -1,6 +1,9 @@
 package config
 
-import "flag"
+import (
+	"flag"
+	"strings"
+)
 
 const (
 	Scheme        = "http://"
@@ -26,5 +29,13 @@ func (c *Config) WithFlags() *Config {
 	flag.StringVar(&c.ServerAddress, "a", c.ServerAddress, "Provide the address start server")
 	flag.StringVar(&c.BaseURL, "b", c.BaseURL, "Provide base address for short url")
 	flag.Parse()
+	return c.cleanSchemes()
+}
+
+func (c *Config) cleanSchemes() *Config {
+	c.ServerAddress = strings.TrimPrefix("http://", c.ServerAddress)
+	c.ServerAddress = strings.TrimPrefix("https://", c.ServerAddress)
+	c.BaseURL = strings.TrimPrefix("http://", c.BaseURL)
+	c.BaseURL = strings.TrimPrefix("https://", c.BaseURL)
 	return c
 }

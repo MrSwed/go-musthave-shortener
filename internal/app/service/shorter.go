@@ -17,10 +17,11 @@ type Shorter interface {
 
 type ShorterService struct {
 	r repository.MemStorage
+	c config.Config
 }
 
-func NewShorterService(r repository.MemStorage) *ShorterService {
-	return &ShorterService{r: r}
+func NewShorterService(r repository.MemStorage, c config.Config) *ShorterService {
+	return &ShorterService{r: r, c: c}
 }
 
 func (s *ShorterService) NewShort(url string) (newURL string, err error) {
@@ -32,7 +33,7 @@ func (s *ShorterService) NewShort(url string) (newURL string, err error) {
 			break
 		}
 	}
-	newURL = fmt.Sprintf("%s%s/%s", config.Scheme, config.BaseURL, sk)
+	newURL = fmt.Sprintf("%s%s/%s", s.c.Scheme, s.c.BaseURL, sk)
 	return
 }
 

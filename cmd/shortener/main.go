@@ -5,12 +5,19 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/handler"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
+	"log"
 )
 
 func main() {
+	var conf = config.Config{}
+	conf.InitConfig()
+	log.Printf(`Started with config:
+  Server Address: %s
+  Base Url: %s
+`, conf.ServerAddress, conf.BaseURL)
 
 	r := repository.NewRepository()
-	s := service.NewService(r)
+	s := service.NewService(r, conf)
 
-	handler.NewHandler(s).RunServer(config.ServerAddress)
+	handler.NewHandler(s).RunServer(conf.ServerAddress)
 }

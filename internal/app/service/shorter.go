@@ -32,7 +32,7 @@ func (s *ShorterService) NewShort(url string) (newURL string, err error) {
 			break
 		}
 	}
-	newURL = fmt.Sprintf("%s%s/%s", config.Scheme, config.Address, sk)
+	newURL = fmt.Sprintf("%s%s/%s", config.Scheme, config.BaseURL, sk)
 	return
 }
 

@@ -12,5 +12,5 @@ func main() {
 	r := repository.NewRepository()
 	s := service.NewService(r)
 
-	handler.NewHandler(s).RunServer(config.Address)
+	handler.NewHandler(s).RunServer(config.ServerAddress)
 }

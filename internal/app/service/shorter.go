@@ -17,10 +17,10 @@ type Shorter interface {
 
 type ShorterService struct {
 	r repository.MemStorage
-	c config.Config
+	c *config.Config
 }
 
-func NewShorterService(r repository.MemStorage, c config.Config) *ShorterService {
+func NewShorterService(r repository.MemStorage, c *config.Config) *ShorterService {
 	return &ShorterService{r: r, c: c}
 }
 

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,10 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var conf = config.NewConfig()
+
 func TestHandler_GetShort(t *testing.T) {
 	h := NewHandler(
 		service.NewService(
-			repository.NewRepository())).
+			repository.NewRepository(), conf)).
 		InitRoutes()
 
 	ts := httptest.NewServer(h.r)
@@ -149,7 +152,7 @@ func TestHandler_GetShort(t *testing.T) {
 func TestHandler_MakeShort(t *testing.T) {
 	h := NewHandler(
 		service.NewService(
-			repository.NewRepository())).
+			repository.NewRepository(), conf)).
 		InitRoutes()
 
 	ts := httptest.NewServer(h.r)
@@ -157,7 +160,6 @@ func TestHandler_MakeShort(t *testing.T) {
 
 	// save some values
 	testURL := "https://practicum.yandex.ru/"
-	localURL := "http://localhost:8080"
 
 	type want struct {
 		code            int
@@ -183,8 +185,7 @@ func TestHandler_MakeShort(t *testing.T) {
 			},
 			want: want{
 				code:            http.StatusCreated,
-				responseContain: localURL,
-				//contentType:     "text/plain; charset=utf-8",
+				responseContain: config.BaseURL,
 			},
 		},
 		{

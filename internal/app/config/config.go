@@ -17,9 +17,14 @@ type Config struct {
 	Scheme        string
 }
 
-func (c *Config) InitConfig() {
-	flag.StringVar(&c.ServerAddress, "a", ServerAddress, "Provide the address start server")
-	flag.StringVar(&c.BaseURL, "b", BaseURL, "Provide base address for short url")
-	c.Scheme = Scheme
+func NewConfig() *Config {
+	c := &Config{ServerAddress, BaseURL, Scheme}
+	return c
+}
+
+func (c *Config) WithFlags() *Config {
+	flag.StringVar(&c.ServerAddress, "a", c.ServerAddress, "Provide the address start server")
+	flag.StringVar(&c.BaseURL, "b", c.BaseURL, "Provide base address for short url")
 	flag.Parse()
+	return c
 }

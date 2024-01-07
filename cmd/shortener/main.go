@@ -9,8 +9,8 @@ import (
 )
 
 func main() {
-	var conf = config.Config{}
-	conf.InitConfig()
+	var conf = config.NewConfig().WithFlags()
+
 	log.Printf(`Started with config:
   Server Address: %s
   Base Url: %s

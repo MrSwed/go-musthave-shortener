@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	var conf = config.NewConfig(true)
+	conf := config.NewConfig(true)
 
 	log.Printf(`Started with config:
   Server Address: %s

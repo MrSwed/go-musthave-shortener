@@ -9,11 +9,11 @@ import (
 )
 
 type Handler struct {
-	s *service.Service
+	s service.Service
 	r *gin.Engine
 }
 
-func NewHandler(s *service.Service) *Handler { return &Handler{s: s} }
+func NewHandler(s service.Service) *Handler { return &Handler{s: s} }
 
 func (h *Handler) InitRoutes() *Handler {
 	h.r = gin.New()

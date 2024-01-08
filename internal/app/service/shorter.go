@@ -20,11 +20,11 @@ type ShorterService struct {
 	c *config.Config
 }
 
-func NewShorterService(r repository.MemStorage, c *config.Config) *ShorterService {
-	return &ShorterService{r: r, c: c}
+func NewShorterService(r repository.MemStorage, c *config.Config) ShorterService {
+	return ShorterService{r: r, c: c}
 }
 
-func (s *ShorterService) NewShort(url string) (newURL string, err error) {
+func (s ShorterService) NewShort(url string) (newURL string, err error) {
 	var sk config.ShortKey
 	for {
 		sk = helper.NewRandShorter().RandStringBytes()
@@ -37,7 +37,7 @@ func (s *ShorterService) NewShort(url string) (newURL string, err error) {
 	return
 }
 
-func (s *ShorterService) GetFromShort(k string) (v string, err error) {
+func (s ShorterService) GetFromShort(k string) (v string, err error) {
 	v, err = s.r.GetFromShort(config.ShortKey([]byte(k)))
 	return
 }

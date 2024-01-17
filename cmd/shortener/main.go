@@ -25,6 +25,10 @@ func main() {
 		"Base Url":       conf.BaseURL,
 	}).Info("Start server")
 
+	defer func() {
+		logger.Info("Server stopped")
+	}()
+
 	go func() {
 		if err := handler.NewHandler(s, logger).RunServer(conf.ServerAddress); err != nil {
 			logger.WithError(err).Error("Can not start server")

@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"sync"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 )
 

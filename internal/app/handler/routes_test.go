@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -18,9 +19,10 @@ import (
 var conf = config.NewConfig()
 
 func TestHandler_GetShort(t *testing.T) {
+	logger := logrus.New()
 	h := NewHandler(
 		service.NewService(
-			repository.NewRepository(), conf)).
+			repository.NewRepository(), conf), logger).
 		InitRoutes()
 
 	ts := httptest.NewServer(h.r)
@@ -150,9 +152,10 @@ func TestHandler_GetShort(t *testing.T) {
 }
 
 func TestHandler_MakeShort(t *testing.T) {
+	logger := logrus.New()
 	h := NewHandler(
 		service.NewService(
-			repository.NewRepository(), conf)).
+			repository.NewRepository(), conf), logger).
 		InitRoutes()
 
 	ts := httptest.NewServer(h.r)

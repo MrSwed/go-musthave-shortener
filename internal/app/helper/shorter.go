@@ -1,8 +1,9 @@
 package helper
 
 import (
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"math/rand"
+
+	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 )
 
 type RandShorter struct {

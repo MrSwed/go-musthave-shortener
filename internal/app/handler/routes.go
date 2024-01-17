@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (h *Handler) MakeShort() func(c *gin.Context) {
@@ -11,18 +11,17 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 		url, err := c.GetRawData()
 		if len(url) == 0 {
 			c.AbortWithStatus(http.StatusBadRequest)
-			log.Printf("No body ")
 			return
 		}
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			log.Printf("Error get body %s", err)
+			h.log.WithField("Error", err).Error("Error get body")
 			return
 		}
 		html, err := h.s.NewShort(string(url))
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			log.Printf("Error reate new short %s", err)
+			h.log.WithField("Error", err).Error("Error reate new short")
 		}
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		c.String(http.StatusCreated, html)

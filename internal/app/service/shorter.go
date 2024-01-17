@@ -3,10 +3,10 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 )
 

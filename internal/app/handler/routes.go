@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
@@ -37,7 +38,8 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 			result domain.ResultURL
 			err    error
 		)
-		if err = c.BindJSON(&url); err != nil || url.URL == "" {
+
+		if err = json.NewDecoder(c.Request.Body).Decode(&url); err != nil || url.URL == "" {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}

@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pquerna/ffjson/ffjson"
 )
 
 func (h *Handler) MakeShort() func(c *gin.Context) {
@@ -37,9 +37,14 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 			url    domain.CreateURL
 			result domain.ResultURL
 			err    error
+			body   []byte
 		)
 
-		if err = json.NewDecoder(c.Request.Body).Decode(&url); err != nil || url.URL == "" {
+		if body, err = c.GetRawData(); err != nil || len(body) == 0 {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		if err = ffjson.NewDecoder().Decode(body, &url); err != nil || url.URL == "" {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}

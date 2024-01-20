@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,10 +23,30 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 		html, err := h.s.NewShort(string(url))
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error reate new short")
+			h.log.WithField("Error", err).Error("Error create new short")
 		}
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		c.String(http.StatusCreated, html)
+	}
+}
+
+func (h *Handler) MakeShortJSON() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var (
+			url    domain.CreateURL
+			result domain.ResultURL
+			err    error
+		)
+		if err = c.BindJSON(&url); err != nil || url.URL == "" {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		result.Result, err = h.s.NewShort(url.URL)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			h.log.WithField("Error", err).Error("Error create new short")
+		}
+		c.JSON(http.StatusCreated, result)
 	}
 }
 

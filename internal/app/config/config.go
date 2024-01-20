@@ -11,6 +11,9 @@ const (
 	ServerAddress = "localhost:8080"
 	BaseURL       = "localhost:8080"
 	ShortLen      = 8
+
+	APIRoute     = "/api"
+	ShortenRoute = "/shorten"
 )
 
 type ShortKey [ShortLen]byte

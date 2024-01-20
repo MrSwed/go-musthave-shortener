@@ -22,7 +22,7 @@ func main() {
 
 	logger.WithFields(logrus.Fields{
 		"Server Address": conf.ServerAddress,
-		"Base Url":       conf.BaseURL,
+		"Base URL":       conf.BaseURL,
 	}).Info("Start server")
 
 	defer func() {

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/logger"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
@@ -28,6 +29,10 @@ func (h *Handler) InitRoutes() *Handler {
 	rootRoute := h.r.Group("/")
 	rootRoute.POST("/", h.MakeShort())
 	rootRoute.GET("/:id", h.GetShort())
+
+	apiRoute := rootRoute.Group(config.APIRoute)
+	apiRoute.POST(config.ShortenRoute, h.MakeShortJSON())
+
 	return h
 }
 

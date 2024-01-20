@@ -1,17 +1,19 @@
 package handler
 
 import (
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
-	"github.com/sirupsen/logrus"
+	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -213,6 +215,125 @@ func TestHandler_MakeShort(t *testing.T) {
 
 			res, err := http.DefaultClient.Do(req)
 
+			require.NoError(t, err)
+			var resBody []byte
+
+			// проверяем код ответа
+			require.Equal(t, test.want.code, res.StatusCode)
+			func() {
+				defer func(Body io.ReadCloser) {
+					err := Body.Close()
+					require.NoError(t, err)
+				}(res.Body)
+				resBody, err = io.ReadAll(res.Body)
+				require.NoError(t, err)
+			}()
+
+			if test.want.responseContain != "" {
+				assert.Contains(t, string(resBody), test.want.responseContain)
+			}
+			if test.want.contentType != "" {
+				assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+			}
+		})
+	}
+}
+
+func TestHandler_MakeShortJSON(t *testing.T) {
+	logger := logrus.New()
+	h := NewHandler(
+		service.NewService(
+			repository.NewRepository(), conf), logger).
+		InitRoutes()
+
+	ts := httptest.NewServer(h.r)
+	defer ts.Close()
+
+	// save some values
+	testURL := "https://practicum.yandex.ru/"
+
+	type want struct {
+		code            int
+		responseContain string
+		contentType     string
+	}
+	type args struct {
+		method string
+		data   interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "Create new shorten by JSON",
+			args: args{
+				method: http.MethodPost,
+				data: map[string]interface{}{
+					"url": testURL,
+				},
+			},
+			want: want{
+				code:            http.StatusCreated,
+				responseContain: config.BaseURL,
+				contentType:     "application/json; charset=utf-8",
+			},
+		},
+		{
+			name: "Post No body",
+			args: args{
+				method: http.MethodPost,
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Post wrong json body",
+			args: args{
+				method: http.MethodPost,
+				data: map[string]interface{}{
+					"somekey": testURL,
+				},
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Post wrong json body",
+			args: args{
+				method: http.MethodPost,
+				data:   testURL,
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Wrong method (GET)",
+			args: args{
+				method: http.MethodGet,
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			b := new(bytes.Buffer)
+			err := json.NewEncoder(b).Encode(test.args.data)
+			require.NoError(t, err)
+
+			req, err := http.NewRequest(test.args.method, ts.URL+config.APIRoute+config.ShortenRoute, b)
+			require.NoError(t, err)
+
+			defer req.Context()
+
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 			var resBody []byte
 

@@ -6,16 +6,6 @@ import (
 	"strings"
 )
 
-const (
-	Scheme        = "http://"
-	ServerAddress = "localhost:8080"
-	BaseURL       = "localhost:8080"
-	ShortLen      = 8
-
-	APIRoute     = "/api"
-	ShortenRoute = "/shorten"
-)
-
 type ShortKey [ShortLen]byte
 
 type Config struct {
@@ -25,7 +15,7 @@ type Config struct {
 }
 
 func NewConfig(init ...bool) *Config {
-	c := &Config{ServerAddress, BaseURL, Scheme}
+	c := &Config{ServerAddress: serverAddress, BaseURL: baseURL, Scheme: scheme}
 	if len(init) > 0 && init[0] {
 		return c.withFlags().withEnv().cleanSchemes()
 	}
@@ -33,19 +23,18 @@ func NewConfig(init ...bool) *Config {
 }
 
 func (c *Config) withEnv() *Config {
-	serverAddress, baseURL := os.Getenv("SERVER_ADDRESS"), os.Getenv("BASE_URL")
-	if serverAddress != "" {
-		c.ServerAddress = serverAddress
+	if envAddress, ok := os.LookupEnv(envServerAddressName); ok && envAddress != "" {
+		c.ServerAddress = envAddress
 	}
-	if baseURL != "" {
-		c.BaseURL = baseURL
+	if envBaseURL, ok := os.LookupEnv(envBaseURLName); ok && envBaseURL != "" {
+		c.BaseURL = envBaseURL
 	}
 	return c
 }
 
 func (c *Config) withFlags() *Config {
-	flag.StringVar(&c.ServerAddress, "a", c.ServerAddress, "Provide the address start server")
-	flag.StringVar(&c.BaseURL, "b", c.BaseURL, "Provide base address for short url")
+	flag.StringVar(&c.ServerAddress, "a", serverAddress, "Provide the address start server")
+	flag.StringVar(&c.BaseURL, "b", baseURL, "Provide base address for short url")
 	flag.Parse()
 	return c
 }

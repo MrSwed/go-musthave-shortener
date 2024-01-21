@@ -18,9 +18,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var conf = config.NewConfig()
-
 func TestHandler_GetShort(t *testing.T) {
+	conf := config.NewConfig()
 	logger := logrus.New()
 	h := NewHandler(
 		service.NewService(
@@ -154,6 +153,7 @@ func TestHandler_GetShort(t *testing.T) {
 }
 
 func TestHandler_MakeShort(t *testing.T) {
+	conf := config.NewConfig()
 	logger := logrus.New()
 	h := NewHandler(
 		service.NewService(
@@ -190,7 +190,7 @@ func TestHandler_MakeShort(t *testing.T) {
 			},
 			want: want{
 				code:            http.StatusCreated,
-				responseContain: config.BaseURL,
+				responseContain: conf.BaseURL,
 			},
 		},
 		{
@@ -240,6 +240,7 @@ func TestHandler_MakeShort(t *testing.T) {
 }
 
 func TestHandler_MakeShortJSON(t *testing.T) {
+	conf := config.NewConfig()
 	logger := logrus.New()
 	h := NewHandler(
 		service.NewService(
@@ -276,7 +277,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			},
 			want: want{
 				code:            http.StatusCreated,
-				responseContain: config.BaseURL,
+				responseContain: conf.BaseURL,
 				contentType:     "application/json; charset=utf-8",
 			},
 		},

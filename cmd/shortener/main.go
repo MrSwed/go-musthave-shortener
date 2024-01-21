@@ -16,16 +16,25 @@ import (
 func main() {
 	conf := config.NewConfig(true)
 
-	r := repository.NewRepository()
-	s := service.NewService(r, conf)
 	logger := logrus.New()
-
 	logger.WithFields(logrus.Fields{
 		"Server Address": conf.ServerAddress,
 		"Base URL":       conf.BaseURL,
 	}).Info("Start server")
 
+	r := repository.NewRepository(conf.FileStoragePath)
+	s := service.NewService(r, conf)
+
+	if data, err := r.Restore(); err != nil {
+		logger.WithError(err).Error("Can not restore data")
+	} else {
+		r.RestoreAll(data)
+	}
+
 	defer func() {
+		if err := r.Save(r.GetAll()); err != nil {
+			logger.WithError(err).Error("Can not save data")
+		}
 		logger.Info("Server stopped")
 	}()
 

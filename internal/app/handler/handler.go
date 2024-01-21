@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"compress/gzip"
 	"net/http"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/logger"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/middleware"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +24,8 @@ func NewHandler(s service.Service, log *logrus.Logger) *Handler { return &Handle
 func (h *Handler) InitRoutes() *Handler {
 	h.r = gin.New()
 	h.r.Use(logger.Logger(h.log))
+	h.r.Use(middleware.Compress(gzip.DefaultCompression))
+	h.r.Use(middleware.Decompress())
 
 	h.r.NoRoute(func(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)

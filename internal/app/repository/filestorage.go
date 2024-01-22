@@ -16,8 +16,8 @@ type FileStorage interface {
 
 type FileStorageItem struct {
 	ID          string `json:"id"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 type FileStorageRepository struct {
@@ -42,8 +42,8 @@ func (f *FileStorageRepository) Save(data map[config.ShortKey]string) error {
 		ind++
 		item := FileStorageItem{
 			ID:          fmt.Sprintf("%d", ind),
-			ShortUrl:    fmt.Sprintf("%s", short),
-			OriginalUrl: original,
+			ShortURL:    fmt.Sprintf("%s", short),
+			OriginalURL: original,
 		}
 		if err = s.WriteData(&item); err != nil {
 			return err
@@ -68,7 +68,7 @@ func (f *FileStorageRepository) Restore() (map[config.ShortKey]string, error) {
 			}
 			return nil, err
 		}
-		data[config.ShortKey([]byte(item.ShortUrl))] = item.OriginalUrl
+		data[config.ShortKey([]byte(item.ShortURL))] = item.OriginalURL
 	}
 
 	return data, nil
@@ -91,12 +91,12 @@ func NewSaver(filename string) (*Saver, error) {
 	}, nil
 }
 
-func (p *Saver) WriteData(data *FileStorageItem) error {
-	return p.encoder.Encode(data)
+func (s *Saver) WriteData(data *FileStorageItem) error {
+	return s.encoder.Encode(data)
 }
 
-func (p *Saver) Close() error {
-	return p.file.Close()
+func (s *Saver) Close() error {
+	return s.file.Close()
 }
 
 type Reader struct {
@@ -115,11 +115,11 @@ func NewReader(filename string) (*Reader, error) {
 	}, nil
 }
 
-func (c *Reader) ReadData() (e *FileStorageItem, err error) {
-	err = c.decoder.Decode(&e)
+func (r *Reader) ReadData() (e *FileStorageItem, err error) {
+	err = r.decoder.Decode(&e)
 	return
 }
 
-func (c *Reader) Close() error {
-	return c.file.Close()
+func (r *Reader) Close() error {
+	return r.file.Close()
 }

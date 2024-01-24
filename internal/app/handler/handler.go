@@ -21,7 +21,7 @@ type Handler struct {
 
 func NewHandler(s service.Service, log *logrus.Logger) *Handler { return &Handler{s: s, log: log} }
 
-func (h *Handler) InitRoutes() *Handler {
+func (h *Handler) Handler() http.Handler {
 	h.r = gin.New()
 	h.r.Use(logger.Logger(h.log))
 	h.r.Use(middleware.Compress(gzip.DefaultCompression))
@@ -37,13 +37,5 @@ func (h *Handler) InitRoutes() *Handler {
 	apiRoute := rootRoute.Group(config.APIRoute)
 	apiRoute.POST(config.ShortenRoute, h.MakeShortJSON())
 
-	return h
-}
-
-func (h *Handler) RunServer(addr string) error {
-	if h.r == nil {
-		h.InitRoutes()
-	}
-
-	return http.ListenAndServe(addr, h.r)
+	return h.r
 }

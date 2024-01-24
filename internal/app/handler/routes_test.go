@@ -21,12 +21,11 @@ import (
 func TestHandler_GetShort(t *testing.T) {
 	conf := config.NewConfig()
 	logger := logrus.New()
-	h := NewHandler(
-		service.NewService(
-			repository.NewRepository(conf.FileStoragePath), conf), logger).
-		InitRoutes()
+	s := service.NewService(repository.NewRepository(conf.FileStoragePath), conf)
+	h := NewHandler(s, logger).
+		Handler()
 
-	ts := httptest.NewServer(h.r)
+	ts := httptest.NewServer(h)
 	defer ts.Close()
 
 	// save some values
@@ -34,8 +33,8 @@ func TestHandler_GetShort(t *testing.T) {
 	testURL2 := "https://practicum2.yandex.ru/"
 	localURL := "http://localhost:8080/"
 
-	testShort1, _ := h.s.NewShort(testURL1)
-	testShort2, _ := h.s.NewShort(testURL2)
+	testShort1, _ := s.NewShort(testURL1)
+	testShort2, _ := s.NewShort(testURL2)
 	testShort1 = strings.ReplaceAll(testShort1, localURL, "")
 	testShort2 = strings.ReplaceAll(testShort2, localURL, "")
 	type want struct {
@@ -158,9 +157,9 @@ func TestHandler_MakeShort(t *testing.T) {
 	h := NewHandler(
 		service.NewService(
 			repository.NewRepository(conf.FileStoragePath), conf), logger).
-		InitRoutes()
+		Handler()
 
-	ts := httptest.NewServer(h.r)
+	ts := httptest.NewServer(h)
 	defer ts.Close()
 
 	// save some values
@@ -245,9 +244,9 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	h := NewHandler(
 		service.NewService(
 			repository.NewRepository(conf.FileStoragePath), conf), logger).
-		InitRoutes()
+		Handler()
 
-	ts := httptest.NewServer(h.r)
+	ts := httptest.NewServer(h)
 	defer ts.Close()
 
 	// save some values

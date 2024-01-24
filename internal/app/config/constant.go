@@ -1,6 +1,8 @@
 package config
 
 const (
+	ServerShutdownTimeout = 30
+
 	scheme          = "http://"
 	serverAddress   = "localhost:8080"
 	baseURL         = "localhost:8080"

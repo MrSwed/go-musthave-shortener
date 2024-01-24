@@ -15,7 +15,7 @@ type FileStorage interface {
 }
 
 type FileStorageItem struct {
-	ID          string `json:"id"`
+	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
@@ -41,7 +41,7 @@ func (f *FileStorageRepository) Save(data map[config.ShortKey]string) error {
 	for short, original := range data {
 		ind++
 		item := FileStorageItem{
-			ID:          fmt.Sprintf("%d", ind),
+			UUID:        fmt.Sprintf("%d", ind),
 			ShortURL:    fmt.Sprintf("%s", short),
 			OriginalURL: original,
 		}

@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"compress/gzip"
-	"io"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type gzipWriter struct {
@@ -18,7 +18,7 @@ func (g *gzipWriter) Write(data []byte) (int, error) {
 	return g.writer.Write(data)
 }
 
-func Compress(level int) gin.HandlerFunc {
+func Compress(level int, l logrus.FieldLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !strings.Contains(c.Request.Header.Get("Accept-Encoding"), "gzip") {
 			c.Next()
@@ -26,10 +26,15 @@ func Compress(level int) gin.HandlerFunc {
 		}
 		gz, err := gzip.NewWriterLevel(c.Writer, level)
 		if err != nil {
-			_, _ = io.WriteString(c.Writer, err.Error())
+			l.WithError(err).Error("gzip")
+			c.Next()
 			return
 		}
-		defer func() { _ = gz.Close() }()
+		defer func() {
+			if err := gz.Close(); err != nil {
+				l.WithError(err).Error("gzip")
+			}
+		}()
 
 		c.Writer.Header().Set("Content-Encoding", "gzip")
 		c.Writer = &gzipWriter{ResponseWriter: c.Writer, writer: gz}
@@ -37,12 +42,16 @@ func Compress(level int) gin.HandlerFunc {
 	}
 }
 
-func Decompress() gin.HandlerFunc {
+func Decompress(l logrus.FieldLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Header.Get(`Content-Encoding`) == `gzip` {
-			if gz, err := gzip.NewReader(c.Request.Body); err == nil {
+			gz, err := gzip.NewReader(c.Request.Body)
+			if err == nil {
 				c.Request.Body = gz
-				defer func() { _ = gz.Close() }()
+				err = gz.Close()
+			}
+			if err != nil {
+				l.WithError(err).Error("gzip")
 			}
 		}
 		c.Next()

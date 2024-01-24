@@ -24,8 +24,8 @@ func NewHandler(s service.Service, log *logrus.Logger) *Handler { return &Handle
 func (h *Handler) Handler() http.Handler {
 	h.r = gin.New()
 	h.r.Use(logger.Logger(h.log))
-	h.r.Use(middleware.Compress(gzip.DefaultCompression))
-	h.r.Use(middleware.Decompress())
+	h.r.Use(middleware.Compress(gzip.DefaultCompression, h.log))
+	h.r.Use(middleware.Decompress(h.log))
 
 	h.r.NoRoute(func(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)

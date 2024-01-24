@@ -40,15 +40,13 @@ func (f *FileStorageRepository) Save(data Store) error {
 	if err != nil {
 		return err
 	}
-	var ind int
-	for short, original := range data {
-		ind++
-		item := FileStorageItem{
-			UUID:        fmt.Sprintf("%d", ind),
+	for short, item := range data {
+		fItem := FileStorageItem{
+			UUID:        item.uuid,
 			ShortURL:    fmt.Sprintf("%s", short),
-			OriginalURL: original,
+			OriginalURL: item.url,
 		}
-		if err = s.WriteData(&item); err != nil {
+		if err = s.WriteData(&fItem); err != nil {
 			return err
 		}
 	}
@@ -56,15 +54,16 @@ func (f *FileStorageRepository) Save(data Store) error {
 	return s.Close()
 }
 
-func (f *FileStorageRepository) Restore() (Store, error) {
+func (f *FileStorageRepository) Restore() (data Store, err error) {
 	if f.f == "" {
-		return nil, fmt.Errorf("no storage file provided")
+		err = fmt.Errorf("no storage file provided")
+		return
 	}
 
-	data := make(Store)
-	r, err := NewReader(f.f)
-	if err != nil {
-		return nil, err
+	data = make(Store)
+	var r *Reader
+	if r, err = NewReader(f.f); err != nil {
+		return
 	}
 
 	for err == nil {
@@ -73,14 +72,15 @@ func (f *FileStorageRepository) Restore() (Store, error) {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return nil, err
+			return
 		}
-		data[config.ShortKey([]byte(item.ShortURL))] = item.OriginalURL
+		data[config.ShortKey([]byte(item.ShortURL))] = storeItem{
+			uuid: item.UUID,
+			url:  item.OriginalURL,
+		}
 	}
-	if err = r.Close(); err != nil {
-		return data, err
-	}
-	return data, nil
+	err = r.Close()
+	return
 }
 
 type Saver struct {

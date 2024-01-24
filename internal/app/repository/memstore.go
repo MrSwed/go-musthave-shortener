@@ -7,21 +7,23 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 )
 
+type Store map[config.ShortKey]string
+
 type MemStorage interface {
 	SaveShort(k config.ShortKey, v string) error
 	GetFromShort(k config.ShortKey) (string, error)
-	GetAll() map[config.ShortKey]string
-	RestoreAll(data map[config.ShortKey]string)
+	GetAll() Store
+	RestoreAll(data Store)
 }
 
 type MemStorageRepository struct {
-	Data map[config.ShortKey]string
+	Data Store
 	mg   sync.RWMutex
 }
 
 func NewMemRepository() *MemStorageRepository {
 	return &MemStorageRepository{
-		Data: map[config.ShortKey]string{},
+		Data: Store{},
 	}
 }
 
@@ -42,10 +44,10 @@ func (m *MemStorageRepository) GetFromShort(k config.ShortKey) (v string, err er
 	return
 }
 
-func (m *MemStorageRepository) GetAll() map[config.ShortKey]string {
+func (m *MemStorageRepository) GetAll() Store {
 	return m.Data
 }
 
-func (m *MemStorageRepository) RestoreAll(data map[config.ShortKey]string) {
+func (m *MemStorageRepository) RestoreAll(data Store) {
 	m.Data = data
 }

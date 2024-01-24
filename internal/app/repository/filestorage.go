@@ -11,8 +11,8 @@ import (
 )
 
 type FileStorage interface {
-	Save(data map[config.ShortKey]string) error
-	Restore() (map[config.ShortKey]string, error)
+	Save(data Store) error
+	Restore() (Store, error)
 }
 
 type FileStorageItem struct {
@@ -32,7 +32,7 @@ func NewFileStorage(f string) *FileStorageRepository {
 	}
 }
 
-func (f *FileStorageRepository) Save(data map[config.ShortKey]string) error {
+func (f *FileStorageRepository) Save(data Store) error {
 	if f.f == "" {
 		return fmt.Errorf("no storage file provided")
 	}
@@ -56,12 +56,12 @@ func (f *FileStorageRepository) Save(data map[config.ShortKey]string) error {
 	return s.Close()
 }
 
-func (f *FileStorageRepository) Restore() (map[config.ShortKey]string, error) {
+func (f *FileStorageRepository) Restore() (Store, error) {
 	if f.f == "" {
 		return nil, fmt.Errorf("no storage file provided")
 	}
 
-	data := make(map[config.ShortKey]string)
+	data := make(Store)
 	r, err := NewReader(f.f)
 	if err != nil {
 		return nil, err

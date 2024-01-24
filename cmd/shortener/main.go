@@ -31,10 +31,15 @@ func main() {
 	s := service.NewService(r, conf)
 	h := handler.NewHandler(s, logger)
 
-	if data, err := r.Restore(); err != nil {
-		logger.WithError(err).Error("Can not restore data")
-	} else {
-		r.RestoreAll(data)
+	if conf.FileStoragePath != "" {
+		data, err := r.Restore()
+		if err != nil {
+			logger.WithError(err).Error("Storage restore")
+		}
+		if data != nil {
+			r.RestoreAll(data)
+			logger.Info("Storage restored")
+		}
 	}
 
 	server := &http.Server{
@@ -72,10 +77,12 @@ func main() {
 
 	<-serverCtx.Done()
 
-	if err := r.Save(r.GetAll()); err != nil {
-		logger.WithError(err).Error("Can not save data")
-	} else {
-		logger.Info("Storage saved")
+	if conf.FileStoragePath != "" {
+		if err := r.Save(r.GetAll()); err != nil {
+			logger.WithError(err).Error("Can not save data")
+		} else {
+			logger.Info("Storage saved")
+		}
 	}
 	logger.Info("Server stopped")
 

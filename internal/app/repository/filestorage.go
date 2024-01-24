@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"io"
 	"os"
+
+	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 )
 
 type FileStorage interface {
@@ -32,11 +33,13 @@ func NewFileStorage(f string) *FileStorageRepository {
 }
 
 func (f *FileStorageRepository) Save(data map[config.ShortKey]string) error {
+	if f.f == "" {
+		return fmt.Errorf("no storage file provided")
+	}
 	s, err := NewSaver(f.f)
 	if err != nil {
 		return err
 	}
-	defer s.Close()
 	var ind int
 	for short, original := range data {
 		ind++
@@ -49,16 +52,20 @@ func (f *FileStorageRepository) Save(data map[config.ShortKey]string) error {
 			return err
 		}
 	}
-	return nil
+
+	return s.Close()
 }
 
 func (f *FileStorageRepository) Restore() (map[config.ShortKey]string, error) {
+	if f.f == "" {
+		return nil, fmt.Errorf("no storage file provided")
+	}
+
 	data := make(map[config.ShortKey]string)
 	r, err := NewReader(f.f)
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
 
 	for err == nil {
 		var item *FileStorageItem
@@ -70,7 +77,9 @@ func (f *FileStorageRepository) Restore() (map[config.ShortKey]string, error) {
 		}
 		data[config.ShortKey([]byte(item.ShortURL))] = item.OriginalURL
 	}
-
+	if err = r.Close(); err != nil {
+		return data, err
+	}
 	return data, nil
 }
 

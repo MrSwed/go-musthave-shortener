@@ -1,13 +1,15 @@
 package repository
 
+import "github.com/MrSwed/go-musthave-shortener/internal/app/config"
+
 type Repository struct {
 	MemStorage
 	FileStorage
 }
 
-func NewRepository(f string) Repository {
+func NewRepository(c *config.Config) Repository {
 	return Repository{
-		MemStorage:  NewMemRepository(),
-		FileStorage: NewFileStorage(f),
+		MemStorage:  NewMemRepository(c),
+		FileStorage: NewFileStorage(c.FileStoragePath),
 	}
 }

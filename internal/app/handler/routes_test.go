@@ -21,9 +21,8 @@ import (
 func TestHandler_GetShort(t *testing.T) {
 	conf := config.NewConfig()
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(conf.FileStoragePath), conf)
-	h := NewHandler(s, logger).
-		Handler()
+	s := service.NewService(repository.NewRepository(conf))
+	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -154,9 +153,8 @@ func TestHandler_GetShort(t *testing.T) {
 func TestHandler_MakeShort(t *testing.T) {
 	conf := config.NewConfig()
 	logger := logrus.New()
-	h := NewHandler(
-		service.NewService(
-			repository.NewRepository(conf.FileStoragePath), conf), logger).
+	s := service.NewService(repository.NewRepository(conf))
+	h := NewHandler(s, logger).
 		Handler()
 
 	ts := httptest.NewServer(h)
@@ -241,10 +239,8 @@ func TestHandler_MakeShort(t *testing.T) {
 func TestHandler_MakeShortJSON(t *testing.T) {
 	conf := config.NewConfig()
 	logger := logrus.New()
-	h := NewHandler(
-		service.NewService(
-			repository.NewRepository(conf.FileStoragePath), conf), logger).
-		Handler()
+	s := service.NewService(repository.NewRepository(conf))
+	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()

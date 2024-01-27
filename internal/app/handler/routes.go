@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pquerna/ffjson/ffjson"
@@ -61,7 +63,12 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		if newURL, err := h.s.GetFromShort(id); err != nil {
-			c.AbortWithStatus(http.StatusBadRequest)
+			if errors.Is(err, myErr.ErrNotExist) {
+				c.AbortWithStatus(http.StatusBadRequest)
+			} else {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				h.log.WithField("Error", err).Error("Error get new short")
+			}
 			return
 		} else {
 			c.Redirect(http.StatusTemporaryRedirect, newURL)

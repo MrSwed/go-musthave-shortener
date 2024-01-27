@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	conf := config.NewConfig(true)
+	conf := config.NewConfig().Init()
 
 	logger := logrus.New()
 	logger.WithFields(logrus.Fields{
@@ -27,8 +27,8 @@ func main() {
 		"FileStoragePath": conf.FileStoragePath,
 	}).Info("Start server")
 
-	r := repository.NewRepository(conf.FileStoragePath)
-	s := service.NewService(r, conf)
+	r := repository.NewRepository(conf)
+	s := service.NewService(r)
 	h := handler.NewHandler(s, logger)
 
 	if conf.FileStoragePath != "" {

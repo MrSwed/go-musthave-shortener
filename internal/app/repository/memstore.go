@@ -6,6 +6,7 @@ import (
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/errors"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 )
 
 type storeItem struct {
@@ -16,38 +17,45 @@ type storeItem struct {
 type Store map[config.ShortKey]storeItem
 
 type MemStorage interface {
-	SaveShort(k config.ShortKey, v string) error
 	GetFromShort(k config.ShortKey) (string, error)
+	NewShort(url string) (newURL string, err error)
 	GetAll() Store
 	RestoreAll(Store)
 }
 
 type MemStorageRepository struct {
+	c    *config.Config
 	Data Store
 	mg   sync.RWMutex
 }
 
-func NewMemRepository() *MemStorageRepository {
+func NewMemRepository(c *config.Config) *MemStorageRepository {
 	return &MemStorageRepository{
-		Data: Store{},
+		Data: make(Store),
+		c:    c,
 	}
 }
 
-func (m *MemStorageRepository) SaveShort(k config.ShortKey, v string) (err error) {
-	m.mg.Lock()
-	defer m.mg.Unlock()
-	m.Data[k] = storeItem{
-		// tmp use int instead uuid
-		uuid: fmt.Sprint(len(m.Data) + 1),
-		url:  v,
+func (r *MemStorageRepository) NewShort(url string) (newURL string, err error) {
+	r.mg.RLock()
+	defer r.mg.RUnlock()
+	for newShort := helper.NewRandShorter().RandStringBytes(); ; {
+		if _, exist := r.Data[newShort]; !exist {
+			r.Data[newShort] = storeItem{
+				// tmp use int instead uuid
+				uuid: fmt.Sprint(len(r.Data) + 1),
+				url:  url,
+			}
+			newURL = fmt.Sprintf("%s%s/%s", r.c.Scheme, r.c.BaseURL, newShort)
+			return
+		}
 	}
-	return
 }
 
-func (m *MemStorageRepository) GetFromShort(k config.ShortKey) (v string, err error) {
-	m.mg.RLock()
-	defer m.mg.RUnlock()
-	if item, ok := m.Data[k]; !ok {
+func (r *MemStorageRepository) GetFromShort(k config.ShortKey) (v string, err error) {
+	r.mg.RLock()
+	defer r.mg.RUnlock()
+	if item, ok := r.Data[k]; !ok {
 		err = errors.ErrNotExist
 	} else {
 		v = item.url
@@ -55,10 +63,10 @@ func (m *MemStorageRepository) GetFromShort(k config.ShortKey) (v string, err er
 	return
 }
 
-func (m *MemStorageRepository) GetAll() Store {
-	return m.Data
+func (r *MemStorageRepository) GetAll() Store {
+	return r.Data
 }
 
-func (m *MemStorageRepository) RestoreAll(data Store) {
-	m.Data = data
+func (r *MemStorageRepository) RestoreAll(data Store) {
+	r.Data = data
 }

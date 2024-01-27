@@ -15,17 +15,17 @@ type Config struct {
 	Scheme          string
 }
 
-func NewConfig(init ...bool) *Config {
-	c := &Config{
+func NewConfig() *Config {
+	return &Config{
 		ServerAddress:   serverAddress,
 		BaseURL:         baseURL,
 		FileStoragePath: fileStoragePath,
 		Scheme:          scheme,
 	}
-	if len(init) > 0 && init[0] {
-		return c.withFlags().withEnv().cleanSchemes()
-	}
-	return c
+}
+
+func (c *Config) Init() *Config {
+	return c.withFlags().withEnv().cleanSchemes()
 }
 
 func (c *Config) withEnv() *Config {
@@ -42,9 +42,9 @@ func (c *Config) withEnv() *Config {
 }
 
 func (c *Config) withFlags() *Config {
-	flag.StringVar(&c.ServerAddress, "a", serverAddress, "Provide the address start server")
-	flag.StringVar(&c.BaseURL, "b", baseURL, "Provide base address for short url")
-	flag.StringVar(&c.FileStoragePath, "f", fileStoragePath, "Provide storage file")
+	flag.StringVar(&c.ServerAddress, "a", c.ServerAddress, "Provide the address start server")
+	flag.StringVar(&c.BaseURL, "b", c.BaseURL, "Provide base address for short url")
+	flag.StringVar(&c.FileStoragePath, "f", c.FileStoragePath, "Provide storage file")
 	flag.Parse()
 	return c
 }

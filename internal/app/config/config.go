@@ -21,12 +21,13 @@ type Config struct {
 	Scheme        string
 }
 
-func NewConfig(init ...bool) *Config {
+func NewConfig() *Config {
 	c := &Config{ServerAddress, BaseURL, Scheme}
-	if len(init) > 0 && init[0] {
-		return c.withFlags().withEnv().cleanSchemes()
-	}
 	return c
+}
+
+func (c *Config) Init() *Config {
+	return c.withFlags().withEnv().cleanSchemes()
 }
 
 func (c *Config) withEnv() *Config {

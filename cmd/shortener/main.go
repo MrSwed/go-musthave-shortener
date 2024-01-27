@@ -16,8 +16,8 @@ func main() {
   Base Url: %s
 `, conf.ServerAddress, conf.BaseURL)
 
-	r := repository.NewRepository()
-	s := service.NewService(r, conf)
+	r := repository.NewRepository(conf)
+	s := service.NewService(r)
 
 	handler.NewHandler(s).RunServer(conf.ServerAddress)
 }

@@ -15,12 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var conf = config.NewConfig()
-
 func TestHandler_GetShort(t *testing.T) {
+	conf := config.NewConfig()
 	h := NewHandler(
 		service.NewService(
-			repository.NewRepository(), conf)).
+			repository.NewRepository(conf))).
 		InitRoutes()
 
 	ts := httptest.NewServer(h.r)
@@ -150,9 +149,10 @@ func TestHandler_GetShort(t *testing.T) {
 }
 
 func TestHandler_MakeShort(t *testing.T) {
+	conf := config.NewConfig()
 	h := NewHandler(
 		service.NewService(
-			repository.NewRepository(), conf)).
+			repository.NewRepository(conf))).
 		InitRoutes()
 
 	ts := httptest.NewServer(h.r)

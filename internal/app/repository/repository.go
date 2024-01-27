@@ -1,5 +1,7 @@
 package repository
 
-func NewRepository() MemStorage {
-	return NewMemRepository()
+import "github.com/MrSwed/go-musthave-shortener/internal/app/config"
+
+func NewRepository(c *config.Config) MemStorage {
+	return NewMemRepository(c)
 }

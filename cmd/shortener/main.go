@@ -78,7 +78,7 @@ func main() {
 	<-serverCtx.Done()
 
 	if conf.FileStoragePath != "" {
-		if err := r.Save(r.GetAll()); err != nil {
+		if err := r.FileStorage.Save(r.MemStorage.GetAll()); err != nil {
 			logger.WithError(err).Error("Can not save data")
 		} else {
 			logger.Info("Storage saved")

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 )
@@ -24,6 +25,7 @@ type FileStorageItem struct {
 type FileStorageRepository struct {
 	Items []FileStorageItem
 	f     string
+	m     sync.RWMutex
 }
 
 func NewFileStorage(f string) *FileStorageRepository {
@@ -36,6 +38,9 @@ func (f *FileStorageRepository) Save(data Store) error {
 	if f.f == "" {
 		return fmt.Errorf("no storage file provided")
 	}
+	f.m.Lock()
+	defer f.m.Unlock()
+
 	s, err := NewSaver(f.f)
 	if err != nil {
 		return err
@@ -59,6 +64,8 @@ func (f *FileStorageRepository) Restore() (data Store, err error) {
 		err = fmt.Errorf("no storage file provided")
 		return
 	}
+	f.m.Lock()
+	defer f.m.Unlock()
 
 	data = make(Store)
 	var r *Reader

@@ -37,8 +37,8 @@ func NewMemRepository(c *config.Config) *MemStorageRepository {
 }
 
 func (r *MemStorageRepository) NewShort(url string) (newURL string, err error) {
-	r.mg.RLock()
-	defer r.mg.RUnlock()
+	r.mg.Lock()
+	defer r.mg.Unlock()
 	for newShort := helper.NewRandShorter().RandStringBytes(); ; {
 		if _, exist := r.Data[newShort]; !exist {
 			r.Data[newShort] = storeItem{

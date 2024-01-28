@@ -2,7 +2,9 @@ package handler
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -252,10 +254,12 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 		code            int
 		responseContain string
 		contentType     string
+		headers         map[string]string
 	}
 	type args struct {
-		method string
-		data   interface{}
+		method  string
+		headers map[string]string
+		data    interface{}
 	}
 	tests := []struct {
 		name string
@@ -266,7 +270,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			name: "Create new shorten by JSON",
 			args: args{
 				method: http.MethodPost,
-				data: map[string]interface{}{
+				data: map[string]string{
 					"url": testURL,
 				},
 			},
@@ -289,7 +293,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			name: "Post wrong json body",
 			args: args{
 				method: http.MethodPost,
-				data: map[string]interface{}{
+				data: map[string]string{
 					"somekey": testURL,
 				},
 			},
@@ -316,6 +320,64 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 				code: http.StatusBadRequest,
 			},
 		},
+		{
+			name: "Check gzip compress answer",
+			args: args{
+				method: http.MethodPost,
+				data: map[string]string{
+					"url": testURL,
+				},
+				headers: map[string]string{
+					"Accept-Encoding": "gzip",
+				},
+			},
+			want: want{
+				code:            http.StatusCreated,
+				responseContain: conf.BaseURL,
+				contentType:     "application/json; charset=utf-8",
+				headers: map[string]string{
+					"Content-Encoding": "gzip",
+				},
+			},
+		},
+		{
+			name: "Check gzip decompress request",
+			args: args{
+				method: http.MethodPost,
+				data: map[string]string{
+					"url": testURL,
+				},
+				headers: map[string]string{
+					"Accept-Encoding": "gzip",
+				},
+			},
+			want: want{
+				code:            http.StatusCreated,
+				responseContain: conf.BaseURL,
+				contentType:     "application/json; charset=utf-8",
+			},
+		},
+		{
+			name: "Check gzip compress/decompress request",
+			args: args{
+				method: http.MethodPost,
+				data: map[string]string{
+					"url": testURL,
+				},
+				headers: map[string]string{
+					"Content-Encoding": "gzip",
+					"Accept-Encoding":  "gzip",
+				},
+			},
+			want: want{
+				code:            http.StatusCreated,
+				responseContain: conf.BaseURL,
+				contentType:     "application/json; charset=utf-8",
+				headers: map[string]string{
+					"Content-Encoding": "gzip",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -323,11 +385,27 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			b := new(bytes.Buffer)
 			err := json.NewEncoder(b).Encode(test.args.data)
 			require.NoError(t, err)
+			if len(test.args.headers) > 0 && test.args.headers["Content-Encoding"] == "gzip" {
+				compB := new(bytes.Buffer)
+				w := gzip.NewWriter(compB)
+				_, err = w.Write(b.Bytes())
+				b = compB
+				require.NoError(t, err)
+
+				err = w.Flush()
+				require.NoError(t, err)
+
+				err = w.Close()
+				require.NoError(t, err)
+			}
 
 			req, err := http.NewRequest(test.args.method, ts.URL+config.APIRoute+config.ShortenRoute, b)
 			require.NoError(t, err)
-
 			defer req.Context()
+
+			for k, v := range test.args.headers {
+				req.Header.Add(k, v)
+			}
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
@@ -335,18 +413,36 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 
 			// проверяем код ответа
 			require.Equal(t, test.want.code, res.StatusCode)
-			func() {
-				defer func(Body io.ReadCloser) {
-					err := Body.Close()
-					require.NoError(t, err)
-				}(res.Body)
-				resBody, err = io.ReadAll(res.Body)
+			defer func(Body io.ReadCloser) {
+				err := Body.Close()
 				require.NoError(t, err)
-			}()
+			}(res.Body)
+			resBody, err = io.ReadAll(res.Body)
+			require.NoError(t, err)
+
+			for k, v := range test.want.headers {
+				assert.True(t, res.Header.Get(k) == v)
+			}
 
 			if test.want.responseContain != "" {
+				assert.True(t, len(resBody) > 0)
+				if len(test.args.headers) > 0 && test.args.headers["Accept-Encoding"] == "gzip" {
+					b := bytes.NewBuffer(resBody)
+					r, err := gzip.NewReader(b)
+					if !errors.Is(err, io.EOF) {
+						require.NoError(t, err)
+					}
+					var resB bytes.Buffer
+					_, err = resB.ReadFrom(r)
+					require.NoError(t, err)
+
+					resBody = resB.Bytes()
+					err = r.Close()
+					require.NoError(t, err)
+				}
 				assert.Contains(t, string(resBody), test.want.responseContain)
 			}
+
 			if test.want.contentType != "" {
 				assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 			}

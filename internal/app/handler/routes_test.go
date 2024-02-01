@@ -409,14 +409,15 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
+
 			var resBody []byte
 
 			// проверяем код ответа
 			require.Equal(t, test.want.code, res.StatusCode)
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
-				require.NoError(t, err)
-			}(res.Body)
 			resBody, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
 

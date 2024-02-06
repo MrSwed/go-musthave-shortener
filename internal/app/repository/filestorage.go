@@ -23,25 +23,25 @@ type FileStorageItem struct {
 }
 
 type FileStorageRepository struct {
-	Items []FileStorageItem
-	f     string
-	m     sync.RWMutex
+	Items    []FileStorageItem
+	fileName string
+	m        sync.RWMutex
 }
 
 func NewFileStorage(f string) *FileStorageRepository {
 	return &FileStorageRepository{
-		f: f,
+		fileName: f,
 	}
 }
 
 func (f *FileStorageRepository) Save(data Store) error {
-	if f.f == "" {
+	if f.fileName == "" {
 		return fmt.Errorf("no storage file provided")
 	}
 	f.m.Lock()
 	defer f.m.Unlock()
 
-	s, err := NewSaver(f.f)
+	s, err := NewSaver(f.fileName)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (f *FileStorageRepository) Save(data Store) error {
 }
 
 func (f *FileStorageRepository) Restore() (data Store, err error) {
-	if f.f == "" {
+	if f.fileName == "" {
 		err = fmt.Errorf("no storage file provided")
 		return
 	}
@@ -69,7 +69,7 @@ func (f *FileStorageRepository) Restore() (data Store, err error) {
 
 	data = make(Store)
 	var r *Reader
-	if r, err = NewReader(f.f); err != nil {
+	if r, err = NewReader(f.fileName); err != nil {
 		return
 	}
 

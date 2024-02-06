@@ -23,7 +23,7 @@ func NewDBStorageRepository(db *pgxpool.Pool) *DBStorageRepo {
 
 func (r *DBStorageRepo) Ping() error {
 	if r.db == nil {
-		return fmt.Errorf("no db connected")
+		return fmt.Errorf("no DB connected")
 	}
 	return r.db.Ping(context.Background())
 }

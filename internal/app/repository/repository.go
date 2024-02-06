@@ -1,13 +1,12 @@
 package repository
 
 import (
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-//go:generate  mockgen -destination=../mock/repository/repository.go -package=mock "github.com/MrSwed/go-musthave-shortener/internal/app/repository" Repository
+//go:generate  mockgen -destination=../mock/repository/repository.go -package=mock "github.com/MrSwed/go-musthave-shortener/internal/app/repository" Repositories
 
-type Repository interface {
+type Repositories interface {
 	MemStorage
 	FileStorage
 	DBStorage
@@ -19,10 +18,15 @@ type Storage struct {
 	DBStorage
 }
 
-func NewRepository(c *config.Config, db *pgxpool.Pool) Storage {
+type Config struct {
+	StorageFile string
+	DB          *pgxpool.Pool
+}
+
+func NewRepositories(c Config) Storage {
 	return Storage{
-		MemStorage:  NewMemRepository(c),
-		FileStorage: NewFileStorage(c.FileStoragePath),
-		DBStorage:   NewDBStorageRepository(db),
+		MemStorage:  NewMemRepository(),
+		FileStorage: NewFileStorage(c.StorageFile),
+		DBStorage:   NewDBStorageRepository(c.DB),
 	}
 }

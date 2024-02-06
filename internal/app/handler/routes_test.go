@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -28,9 +27,9 @@ func TestHandler_GetShort(t *testing.T) {
 	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	repo := mocks.NewMockRepository(ctrl)
-
-	s := service.NewService(repo)
+	repo := mocks.NewMockRepositories(ctrl)
+	conf := config.NewConfig()
+	s := service.NewService(repo, conf)
 	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
@@ -40,8 +39,8 @@ func TestHandler_GetShort(t *testing.T) {
 	testURL1 := "https://practicum.yandex.ru/"
 	testURL2 := "https://practicum2.yandex.ru/"
 
-	testShort1 := fmt.Sprint(helper.NewRandShorter().RandStringBytes())
-	testShort2 := fmt.Sprint(helper.NewRandShorter().RandStringBytes())
+	testShort1 := helper.NewRandShorter().RandStringBytes().String()
+	testShort2 := helper.NewRandShorter().RandStringBytes().String()
 
 	_ = repo.EXPECT().GetFromShort(testShort1).Return(testURL1, nil).AnyTimes()
 	_ = repo.EXPECT().GetFromShort(testShort2).Return(testURL2, nil).AnyTimes()
@@ -166,18 +165,16 @@ func TestHandler_MakeShort(t *testing.T) {
 	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	repo := mocks.NewMockRepository(ctrl)
-
-	s := service.NewService(repo)
-	h := NewHandler(s, logger).
-		Handler()
+	repo := mocks.NewMockRepositories(ctrl)
+	s := service.NewService(repo, conf)
+	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
 	// save some values
 	testURL := "https://practicum.yandex.ru/"
-	testShortURL := fmt.Sprintf("%s%s/%s", conf.Scheme, conf.BaseURL, helper.NewRandShorter().RandStringBytes())
+	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
 	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
 
@@ -259,9 +256,9 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	repo := mocks.NewMockRepository(ctrl)
+	repo := mocks.NewMockRepositories(ctrl)
 
-	s := service.NewService(repo)
+	s := service.NewService(repo, conf)
 	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
@@ -270,7 +267,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	// save some values
 	testURL := "https://practicum.yandex.ru/"
 
-	testShortURL := fmt.Sprintf("%s%s/%s", conf.Scheme, conf.BaseURL, helper.NewRandShorter().RandStringBytes())
+	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
 	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
 

@@ -37,8 +37,8 @@ func main() {
 		logger.Info("DB connected")
 	}
 
-	r := repository.NewRepository(conf, db)
-	s := service.NewService(r)
+	r := repository.NewRepositories(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
+	s := service.NewService(r, conf)
 	h := handler.NewHandler(s, logger)
 
 	if conf.FileStoragePath != "" {

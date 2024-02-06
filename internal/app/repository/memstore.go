@@ -24,19 +24,17 @@ type MemStorage interface {
 }
 
 type MemStorageRepository struct {
-	c    *config.Config
 	Data Store
 	mg   sync.RWMutex
 }
 
-func NewMemRepository(c *config.Config) *MemStorageRepository {
+func NewMemRepository() *MemStorageRepository {
 	return &MemStorageRepository{
 		Data: make(Store),
-		c:    c,
 	}
 }
 
-func (r *MemStorageRepository) NewShort(url string) (newURL string, err error) {
+func (r *MemStorageRepository) NewShort(url string) (short string, err error) {
 	r.mg.Lock()
 	defer r.mg.Unlock()
 	for newShort := helper.NewRandShorter().RandStringBytes(); ; {
@@ -46,7 +44,7 @@ func (r *MemStorageRepository) NewShort(url string) (newURL string, err error) {
 				uuid: fmt.Sprint(len(r.Data) + 1),
 				url:  url,
 			}
-			newURL = fmt.Sprintf("%s%s/%s", r.c.Scheme, r.c.BaseURL, newShort)
+			short = newShort.String()
 			return
 		}
 	}

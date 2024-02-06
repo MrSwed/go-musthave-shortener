@@ -8,6 +8,10 @@ import (
 
 type ShortKey [ShortLen]byte
 
+func (s ShortKey) String() string {
+	return string(s[:])
+}
+
 type Config struct {
 	ServerAddress   string
 	BaseURL         string

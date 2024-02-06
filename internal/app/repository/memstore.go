@@ -9,13 +9,6 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 )
 
-type storeItem struct {
-	uuid string
-	url  string
-}
-
-type Store map[config.ShortKey]storeItem
-
 type MemStorage interface {
 	GetFromShort(k string) (string, error)
 	NewShort(url string) (newURL string, err error)

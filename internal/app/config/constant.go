@@ -17,4 +17,6 @@ const (
 
 	APIRoute     = "/api"
 	ShortenRoute = "/shorten"
+
+	DBTableName = "shortener"
 )

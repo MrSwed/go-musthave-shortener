@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/golang-migrate/migrate/v4"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,10 +12,12 @@ import (
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/handler"
+	myMigrate "github.com/MrSwed/go-musthave-shortener/internal/app/migrate"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
@@ -31,10 +34,19 @@ func main() {
 
 	var db *pgxpool.Pool
 	if len(conf.DatabaseDSN) > 0 {
-		if db, err = connectPostgres(conf.DatabaseDSN); err != nil {
+		if db, err = connectPostgres(conf.DatabaseDSN, logger); err != nil {
 			logger.WithError(err).Fatal("cannot connect db")
 		}
 		logger.Info("DB connected")
+		versions, errM := myMigrate.Migrate(stdlib.OpenDBFromPool(db))
+		switch {
+		case errors.Is(errM, migrate.ErrNoChange):
+			logger.Info("DB migrate: ", errM, versions)
+		case errM == nil:
+			logger.Info("DB migrate: new applied ", versions)
+		default:
+			logger.WithError(err).Error("DB migrate: ", versions)
+		}
 	}
 
 	r := repository.NewRepositories(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
@@ -98,13 +110,21 @@ func main() {
 
 }
 
-func connectPostgres(sbDSN string) (db *pgxpool.Pool, err error) {
+func connectPostgres(sbDSN string, logger *logrus.Logger) (db *pgxpool.Pool, err error) {
 	var poolConfig *pgxpool.Config
 	poolConfig, err = pgxpool.ParseConfig(sbDSN)
 	if err != nil {
 		return
 	}
 
+	//poolConfig.AfterConnect = func(ctx context.Context, conn *pgx.Conn) (err error) {
+	//	if err = myMigrate.Migrate(conn, logger); err == nil {
+	//		logger.Info("DB migrated ")
+	//	}
+	//	return
+	//}
+
 	db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 	return
+
 }

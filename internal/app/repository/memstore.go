@@ -17,7 +17,7 @@ type storeItem struct {
 type Store map[config.ShortKey]storeItem
 
 type MemStorage interface {
-	GetFromShort(k config.ShortKey) (string, error)
+	GetFromShort(k string) (string, error)
 	NewShort(url string) (newURL string, err error)
 	GetAll() Store
 	RestoreAll(Store)
@@ -52,10 +52,15 @@ func (r *MemStorageRepository) NewShort(url string) (newURL string, err error) {
 	}
 }
 
-func (r *MemStorageRepository) GetFromShort(k config.ShortKey) (v string, err error) {
+func (r *MemStorageRepository) GetFromShort(k string) (v string, err error) {
+	if len([]byte(k)) != len(config.ShortKey{}) {
+		err = errors.ErrNotExist
+		return
+	}
+	sk := config.ShortKey([]byte(k))
 	r.mg.RLock()
 	defer r.mg.RUnlock()
-	if item, ok := r.Data[k]; !ok {
+	if item, ok := r.Data[sk]; !ok {
 		err = errors.ErrNotExist
 	} else {
 		v = item.url

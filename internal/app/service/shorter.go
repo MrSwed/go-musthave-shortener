@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 )
 
@@ -23,6 +22,6 @@ func (s ShorterService) NewShort(url string) (newURL string, err error) {
 }
 
 func (s ShorterService) GetFromShort(k string) (v string, err error) {
-	v, err = s.r.GetFromShort(config.ShortKey([]byte(k)))
+	v, err = s.r.GetFromShort(k)
 	return
 }

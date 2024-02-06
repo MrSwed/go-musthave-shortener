@@ -11,6 +11,7 @@ const (
 	envServerAddressName   = "SERVER_ADDRESS"
 	envBaseURLName         = "BASE_URL"
 	envFileStoragePathName = "FILE_STORAGE_PATH"
+	envNameDBDSN           = "DATABASE_DSN"
 
 	ShortLen = 8
 

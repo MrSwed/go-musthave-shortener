@@ -32,6 +32,7 @@ func (h *Handler) Handler() http.Handler {
 	})
 	rootRoute := h.r.Group("/")
 	rootRoute.POST("/", h.MakeShort())
+	rootRoute.GET("/ping", h.GetDBPing())
 	rootRoute.GET("/:id", h.GetShort())
 
 	apiRoute := rootRoute.Group(config.APIRoute)

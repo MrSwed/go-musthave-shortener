@@ -14,12 +14,14 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	conf := config.NewConfig().Init()
-
+	var err error
 	logger := logrus.New()
 	logger.WithFields(logrus.Fields{
 		"Server Address":  conf.ServerAddress,
@@ -27,7 +29,15 @@ func main() {
 		"FileStoragePath": conf.FileStoragePath,
 	}).Info("Start server")
 
-	r := repository.NewRepository(conf)
+	var db *pgxpool.Pool
+	if len(conf.DatabaseDSN) > 0 {
+		if db, err = connectPostgres(conf.DatabaseDSN); err != nil {
+			logger.WithError(err).Fatal("cannot connect db")
+		}
+		logger.Info("DB connected")
+	}
+
+	r := repository.NewRepository(conf, db)
 	s := service.NewService(r)
 	h := handler.NewHandler(s, logger)
 
@@ -86,4 +96,15 @@ func main() {
 	}
 	logger.Info("Server stopped")
 
+}
+
+func connectPostgres(sbDSN string) (db *pgxpool.Pool, err error) {
+	var poolConfig *pgxpool.Config
+	poolConfig, err = pgxpool.ParseConfig(sbDSN)
+	if err != nil {
+		return
+	}
+
+	db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
+	return
 }

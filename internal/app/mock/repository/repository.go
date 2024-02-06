@@ -7,7 +7,6 @@ package mock
 import (
 	reflect "reflect"
 
-	config "github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	repository "github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -50,7 +49,7 @@ func (mr *MockRepositoryMockRecorder) GetAll() *gomock.Call {
 }
 
 // GetFromShort mocks base method.
-func (m *MockRepository) GetFromShort(arg0 config.ShortKey) (string, error) {
+func (m *MockRepository) GetFromShort(arg0 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFromShort", arg0)
 	ret0, _ := ret[0].(string)
@@ -77,6 +76,20 @@ func (m *MockRepository) NewShort(arg0 string) (string, error) {
 func (mr *MockRepositoryMockRecorder) NewShort(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShort", reflect.TypeOf((*MockRepository)(nil).NewShort), arg0)
+}
+
+// Ping mocks base method.
+func (m *MockRepository) Ping() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockRepositoryMockRecorder) Ping() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockRepository)(nil).Ping))
 }
 
 // Restore mocks base method.

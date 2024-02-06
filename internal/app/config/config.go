@@ -16,6 +16,7 @@ type Config struct {
 	ServerAddress   string
 	BaseURL         string
 	FileStoragePath string
+	DatabaseDSN     string
 	Scheme          string
 }
 
@@ -29,7 +30,7 @@ func NewConfig() *Config {
 }
 
 func (c *Config) Init() *Config {
-	return c.withFlags().withEnv().cleanSchemes()
+	return c.withFlags().withEnv().cleanParameters()
 }
 
 func (c *Config) withEnv() *Config {
@@ -42,6 +43,9 @@ func (c *Config) withEnv() *Config {
 	if envFileStoragePath, ok := os.LookupEnv(envFileStoragePathName); ok && envFileStoragePath != "" {
 		c.FileStoragePath = envFileStoragePath
 	}
+	if dbDSN, ok := os.LookupEnv(envNameDBDSN); ok {
+		c.DatabaseDSN = dbDSN
+	}
 	return c
 }
 
@@ -49,14 +53,16 @@ func (c *Config) withFlags() *Config {
 	flag.StringVar(&c.ServerAddress, "a", c.ServerAddress, "Provide the address start server")
 	flag.StringVar(&c.BaseURL, "b", c.BaseURL, "Provide base address for short url")
 	flag.StringVar(&c.FileStoragePath, "f", c.FileStoragePath, "Provide storage file")
+	flag.StringVar(&c.DatabaseDSN, "d", c.DatabaseDSN, "Provide the database dsn connect string")
 	flag.Parse()
 	return c
 }
 
-func (c *Config) cleanSchemes() *Config {
+func (c *Config) cleanParameters() *Config {
 	c.ServerAddress = strings.TrimPrefix(c.ServerAddress, "http://")
 	c.ServerAddress = strings.TrimPrefix(c.ServerAddress, "https://")
 	c.BaseURL = strings.TrimPrefix(c.BaseURL, "http://")
 	c.BaseURL = strings.TrimPrefix(c.BaseURL, "https://")
+	c.DatabaseDSN = strings.Trim(c.DatabaseDSN, "'")
 	return c
 }

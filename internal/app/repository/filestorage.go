@@ -48,7 +48,7 @@ func (f *FileStorageRepository) Save(data Store) error {
 	for short, item := range data {
 		fItem := FileStorageItem{
 			UUID:        item.uuid,
-			ShortURL:    fmt.Sprintf("%s", short),
+			ShortURL:    short.String(),
 			OriginalURL: item.url,
 		}
 		if err = s.WriteData(&fItem); err != nil {

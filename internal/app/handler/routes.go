@@ -76,3 +76,15 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 		}
 	}
 }
+
+func (h *Handler) GetDBPing() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		if err := h.s.CheckDB(); err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			h.log.WithField("Error", err).Error("Error get new short")
+			return
+		} else {
+			c.String(http.StatusOK, "Status: ok")
+		}
+	}
+}

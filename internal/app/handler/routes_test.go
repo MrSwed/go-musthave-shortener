@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 	mocks "github.com/MrSwed/go-musthave-shortener/internal/app/mock/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
@@ -40,8 +40,8 @@ func TestHandler_GetShort(t *testing.T) {
 	testURL1 := "https://practicum.yandex.ru/"
 	testURL2 := "https://practicum2.yandex.ru/"
 
-	testShort1 := helper.NewRandShorter().RandStringBytes()
-	testShort2 := helper.NewRandShorter().RandStringBytes()
+	testShort1 := fmt.Sprint(helper.NewRandShorter().RandStringBytes())
+	testShort2 := fmt.Sprint(helper.NewRandShorter().RandStringBytes())
 
 	_ = repo.EXPECT().GetFromShort(testShort1).Return(testURL1, nil).AnyTimes()
 	_ = repo.EXPECT().GetFromShort(testShort2).Return(testURL2, nil).AnyTimes()
@@ -95,7 +95,7 @@ func TestHandler_GetShort(t *testing.T) {
 			name: "Get some exist",
 			args: args{
 				method: http.MethodGet,
-				path:   "/" + fmt.Sprint(testShort1),
+				path:   "/" + testShort1,
 			},
 			want: want{
 				code:            http.StatusTemporaryRedirect,
@@ -107,7 +107,7 @@ func TestHandler_GetShort(t *testing.T) {
 			name: "Get some exist 2",
 			args: args{
 				method: http.MethodGet,
-				path:   "/" + fmt.Sprint(testShort2),
+				path:   "/" + testShort2,
 			},
 			want: want{
 				code:            http.StatusTemporaryRedirect,
@@ -119,7 +119,7 @@ func TestHandler_GetShort(t *testing.T) {
 			name: "PUT some exist. Wrong method 2",
 			args: args{
 				method: http.MethodPut,
-				path:   "/" + fmt.Sprint(testShort1),
+				path:   "/" + testShort1,
 			},
 			want: want{
 				code: http.StatusBadRequest,

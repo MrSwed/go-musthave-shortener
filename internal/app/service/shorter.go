@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 )

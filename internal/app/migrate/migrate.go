@@ -8,7 +8,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	/**/)
+)
 
 //go:generate migrate create -ext sql -dir sql -format 20060102030405 shortener_table
 

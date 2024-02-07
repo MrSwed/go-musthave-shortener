@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/golang-migrate/migrate/v4"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +15,7 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
@@ -53,7 +53,7 @@ func main() {
 		isNewDB = versions[0] == 0
 	}
 
-	r := repository.NewRepositories(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
+	r := repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
 	s := service.NewService(r, conf)
 	h := handler.NewHandler(s, logger)
 

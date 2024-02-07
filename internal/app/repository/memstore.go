@@ -10,13 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type DataStorage interface {
-	GetFromShort(k string) (string, error)
-	NewShort(url string) (newURL string, err error)
-	GetAll() (Store, error)
-	RestoreAll(Store) error
-}
-
 type MemStorageRepository struct {
 	Data Store
 	mg   sync.RWMutex

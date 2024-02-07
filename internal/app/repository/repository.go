@@ -6,6 +6,13 @@ import (
 
 //go:generate  mockgen -destination=../mock/repository/repository.go -package=mock "github.com/MrSwed/go-musthave-shortener/internal/app/repository" Repository
 
+type DataStorage interface {
+	GetFromShort(k string) (string, error)
+	NewShort(url string) (newURL string, err error)
+	GetAll() (Store, error)
+	RestoreAll(Store) error
+}
+
 type Repository interface {
 	DataStorage
 	FileStorage
@@ -21,7 +28,7 @@ type Config struct {
 	DB          *pgxpool.Pool
 }
 
-func NewRepositories(c Config) (s Storage) {
+func NewRepository(c Config) (s Storage) {
 	if c.DB != nil {
 		s = Storage{
 			FileStorage: NewFileStorage(c.StorageFile),

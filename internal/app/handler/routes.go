@@ -81,8 +81,7 @@ func (h *Handler) GetDBPing() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		if err := h.s.CheckDB(); err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error get new short")
-			return
+			h.log.Error("Error ", err)
 		} else {
 			c.String(http.StatusOK, "Status: ok")
 		}

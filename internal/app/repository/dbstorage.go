@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	myErrs "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
@@ -24,10 +25,6 @@ type DBStorageItem struct {
 
 type DBStorage interface {
 	Ping() error
-	GetFromShort(k string) (string, error)
-	NewShort(url string) (newURL string, err error)
-	GetAll() (Store, error)
-	RestoreAll(Store) error
 }
 
 type DBStorageRepo struct {
@@ -49,7 +46,7 @@ func (r *DBStorageRepo) Ping() error {
 
 func (r *DBStorageRepo) saveNew(item DBStorageItem) (err error) {
 	_, err = r.db.Exec(context.Background(),
-		fmt.Sprintf("insert into %s (short, url) values ($1, $2)", config.DBTableName),
+		"insert into "+config.DBTableName+" (short, url) values ($1, $2)",
 		item.Short, item.URL)
 	return
 }
@@ -73,7 +70,7 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 		return
 	}
 
-	sqlStr := fmt.Sprintf(`SELECT uuid, short, url FROM %s WHERE short = $1`, config.DBTableName)
+	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE short = $1`
 	row := r.db.QueryRow(context.Background(), sqlStr)
 	var item = DBStorageItem{}
 	if err = row.Scan(&item); err != nil {
@@ -88,7 +85,7 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 
 func (r *DBStorageRepo) GetAll() (data Store, err error) {
 	data = make(Store)
-	sqlStr := fmt.Sprintf(`SELECT uuid, short, url FROM %s`, config.DBTableName)
+	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName
 	var rows pgx.Rows
 	if rows, err = r.db.Query(context.Background(), sqlStr); err != nil {
 		return
@@ -97,9 +94,6 @@ func (r *DBStorageRepo) GetAll() (data Store, err error) {
 	for rows.Next() {
 		var item = DBStorageItem{}
 		if err = rows.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				err = myErrs.ErrNotExist
-			}
 			return
 		}
 		data[config.ShortKey([]byte(item.Short))] = storeItem{

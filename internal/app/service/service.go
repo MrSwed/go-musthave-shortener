@@ -9,6 +9,6 @@ type Service struct {
 	Shorter
 }
 
-func NewService(r repository.Repositories, c *config.Config) Service {
+func NewService(r repository.Repository, c *config.Config) Service {
 	return Service{Shorter: NewShorterService(r, c)}
 }

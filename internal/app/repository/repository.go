@@ -4,18 +4,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-//go:generate  mockgen -destination=../mock/repository/repository.go -package=mock "github.com/MrSwed/go-musthave-shortener/internal/app/repository" Repositories
+//go:generate  mockgen -destination=../mock/repository/repository.go -package=mock "github.com/MrSwed/go-musthave-shortener/internal/app/repository" Repository
 
-type Repositories interface {
-	MemStorage
+type Repository interface {
+	DataStorage
 	FileStorage
-	DBStorage
 }
 
 type Storage struct {
-	MemStorage
+	DataStorage
 	FileStorage
-	DBStorage
 }
 
 type Config struct {
@@ -23,10 +21,17 @@ type Config struct {
 	DB          *pgxpool.Pool
 }
 
-func NewRepositories(c Config) Storage {
-	return Storage{
-		MemStorage:  NewMemRepository(),
-		FileStorage: NewFileStorage(c.StorageFile),
-		DBStorage:   NewDBStorageRepository(c.DB),
+func NewRepositories(c Config) (s Storage) {
+	if c.DB != nil {
+		s = Storage{
+			FileStorage: NewFileStorage(c.StorageFile),
+			DataStorage: NewDBStorageRepository(c.DB),
+		}
+	} else {
+		s = Storage{
+			FileStorage: NewFileStorage(c.StorageFile),
+			DataStorage: NewMemRepository(),
+		}
 	}
+	return s
 }

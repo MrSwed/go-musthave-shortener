@@ -27,7 +27,7 @@ func TestHandler_GetShort(t *testing.T) {
 	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	repo := mocks.NewMockRepositories(ctrl)
+	repo := mocks.NewMockRepository(ctrl)
 	conf := config.NewConfig()
 	s := service.NewService(repo, conf)
 	h := NewHandler(s, logger).Handler()
@@ -165,7 +165,7 @@ func TestHandler_MakeShort(t *testing.T) {
 	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	repo := mocks.NewMockRepositories(ctrl)
+	repo := mocks.NewMockRepository(ctrl)
 	s := service.NewService(repo, conf)
 	h := NewHandler(s, logger).Handler()
 
@@ -256,7 +256,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	repo := mocks.NewMockRepositories(ctrl)
+	repo := mocks.NewMockRepository(ctrl)
 
 	s := service.NewService(repo, conf)
 	h := NewHandler(s, logger).Handler()

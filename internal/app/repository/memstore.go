@@ -1,18 +1,19 @@
 package repository
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
+
+	"github.com/google/uuid"
 )
 
-type MemStorage interface {
+type DataStorage interface {
 	GetFromShort(k string) (string, error)
 	NewShort(url string) (newURL string, err error)
-	GetAll() Store
+	GetAll() (Store, error)
 	RestoreAll(Store) error
 }
 
@@ -33,8 +34,7 @@ func (r *MemStorageRepository) NewShort(url string) (short string, err error) {
 	for newShort := helper.NewRandShorter().RandStringBytes(); ; {
 		if _, exist := r.Data[newShort]; !exist {
 			r.Data[newShort] = storeItem{
-				// tmp use int instead uuid
-				uuid: fmt.Sprint(len(r.Data) + 1),
+				uuid: uuid.New().String(),
 				url:  url,
 			}
 			short = newShort.String()
@@ -59,8 +59,8 @@ func (r *MemStorageRepository) GetFromShort(k string) (v string, err error) {
 	return
 }
 
-func (r *MemStorageRepository) GetAll() Store {
-	return r.Data
+func (r *MemStorageRepository) GetAll() (Store, error) {
+	return r.Data, nil
 }
 
 func (r *MemStorageRepository) RestoreAll(data Store) error {

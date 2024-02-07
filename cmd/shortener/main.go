@@ -32,7 +32,10 @@ func main() {
 		"FileStoragePath": conf.FileStoragePath,
 	}).Info("Start server")
 
-	var db *pgxpool.Pool
+	var (
+		db      *pgxpool.Pool
+		isNewDB = true
+	)
 	if len(conf.DatabaseDSN) > 0 {
 		if db, err = connectPostgres(conf.DatabaseDSN); err != nil {
 			logger.WithError(err).Fatal("cannot connect db")
@@ -45,21 +48,22 @@ func main() {
 		case errM == nil:
 			logger.Info("DB migrate: new applied ", versions)
 		default:
-			logger.WithError(err).Error("DB migrate: ", versions)
+			logger.WithError(err).Fatal("DB migrate: ", versions)
 		}
+		isNewDB = versions[0] == 0
 	}
 
 	r := repository.NewRepositories(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
 	s := service.NewService(r, conf)
 	h := handler.NewHandler(s, logger)
 
-	if conf.FileStoragePath != "" {
+	if conf.FileStoragePath != "" && isNewDB {
 		data, err := r.Restore()
 		if err != nil {
 			logger.WithError(err).Error("Storage restore")
 		}
 		if data != nil {
-			if err = r.RestoreAll(data); err != nil {
+			if err = s.RestoreAll(data); err != nil {
 				logger.Error(err)
 			} else {
 				logger.Info("Storage restored")
@@ -103,7 +107,9 @@ func main() {
 	<-serverCtx.Done()
 
 	if conf.FileStoragePath != "" {
-		if err := r.FileStorage.Save(r.GetAll()); err != nil {
+		if store, err := s.GetAll(); err != nil {
+			logger.WithError(err).Error("Can get data for save to disk")
+		} else if err := r.FileStorage.Save(store); err != nil {
 			logger.WithError(err).Error("Can not save data")
 		} else {
 			logger.Info("Storage saved")

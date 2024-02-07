@@ -108,9 +108,11 @@ func (mr *MockRepositoriesMockRecorder) Restore() *gomock.Call {
 }
 
 // RestoreAll mocks base method.
-func (m *MockRepositories) RestoreAll(arg0 repository.Store) {
+func (m *MockRepositories) RestoreAll(arg0 repository.Store) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RestoreAll", arg0)
+	ret := m.ctrl.Call(m, "RestoreAll", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // RestoreAll indicates an expected call of RestoreAll.

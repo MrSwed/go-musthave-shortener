@@ -13,7 +13,7 @@ type MemStorage interface {
 	GetFromShort(k string) (string, error)
 	NewShort(url string) (newURL string, err error)
 	GetAll() Store
-	RestoreAll(Store)
+	RestoreAll(Store) error
 }
 
 type MemStorageRepository struct {
@@ -63,6 +63,7 @@ func (r *MemStorageRepository) GetAll() Store {
 	return r.Data
 }
 
-func (r *MemStorageRepository) RestoreAll(data Store) {
+func (r *MemStorageRepository) RestoreAll(data Store) error {
 	r.Data = data
+	return nil
 }

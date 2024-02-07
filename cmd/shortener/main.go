@@ -34,7 +34,7 @@ func main() {
 
 	var db *pgxpool.Pool
 	if len(conf.DatabaseDSN) > 0 {
-		if db, err = connectPostgres(conf.DatabaseDSN, logger); err != nil {
+		if db, err = connectPostgres(conf.DatabaseDSN); err != nil {
 			logger.WithError(err).Fatal("cannot connect db")
 		}
 		logger.Info("DB connected")
@@ -59,8 +59,11 @@ func main() {
 			logger.WithError(err).Error("Storage restore")
 		}
 		if data != nil {
-			r.RestoreAll(data)
-			logger.Info("Storage restored")
+			if err = r.RestoreAll(data); err != nil {
+				logger.Error(err)
+			} else {
+				logger.Info("Storage restored")
+			}
 		}
 	}
 
@@ -100,7 +103,7 @@ func main() {
 	<-serverCtx.Done()
 
 	if conf.FileStoragePath != "" {
-		if err := r.FileStorage.Save(r.MemStorage.GetAll()); err != nil {
+		if err := r.FileStorage.Save(r.GetAll()); err != nil {
 			logger.WithError(err).Error("Can not save data")
 		} else {
 			logger.Info("Storage saved")
@@ -110,19 +113,12 @@ func main() {
 
 }
 
-func connectPostgres(sbDSN string, logger *logrus.Logger) (db *pgxpool.Pool, err error) {
+func connectPostgres(sbDSN string) (db *pgxpool.Pool, err error) {
 	var poolConfig *pgxpool.Config
 	poolConfig, err = pgxpool.ParseConfig(sbDSN)
 	if err != nil {
 		return
 	}
-
-	//poolConfig.AfterConnect = func(ctx context.Context, conn *pgx.Conn) (err error) {
-	//	if err = myMigrate.Migrate(conn, logger); err == nil {
-	//		logger.Info("DB migrated ")
-	//	}
-	//	return
-	//}
 
 	db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 	return

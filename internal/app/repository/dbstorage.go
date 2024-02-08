@@ -71,9 +71,9 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 	}
 
 	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE short = $1`
-	row := r.db.QueryRow(context.Background(), sqlStr)
+	row := r.db.QueryRow(context.Background(), sqlStr, k)
 	var item = DBStorageItem{}
-	if err = row.Scan(&item); err != nil {
+	if err = row.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = myErrs.ErrNotExist
 		}

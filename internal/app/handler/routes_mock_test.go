@@ -12,18 +12,24 @@ import (
 	"testing"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
+	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
+	mocks "github.com/MrSwed/go-musthave-shortener/internal/app/mock/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestHandler_GetShort(t *testing.T) {
-	conf := config.NewConfig()
+func TestHandler_MockGetShort(t *testing.T) {
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath}), conf)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := mocks.NewMockRepository(ctrl)
+	conf := config.NewConfig()
+	s := service.NewService(repo, conf)
 	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
@@ -32,12 +38,14 @@ func TestHandler_GetShort(t *testing.T) {
 	// save some values
 	testURL1 := "https://practicum.yandex.ru/"
 	testURL2 := "https://practicum2.yandex.ru/"
-	localURL := "http://localhost:8080/"
 
-	testShort1, _ := s.NewShort(testURL1)
-	testShort2, _ := s.NewShort(testURL2)
-	testShort1 = strings.ReplaceAll(testShort1, localURL, "")
-	testShort2 = strings.ReplaceAll(testShort2, localURL, "")
+	testShort1 := helper.NewRandShorter().RandStringBytes().String()
+	testShort2 := helper.NewRandShorter().RandStringBytes().String()
+
+	_ = repo.EXPECT().GetFromShort(testShort1).Return(testURL1, nil).AnyTimes()
+	_ = repo.EXPECT().GetFromShort(testShort2).Return(testURL2, nil).AnyTimes()
+	_ = repo.EXPECT().GetFromShort(gomock.Any()).Return("", myErr.ErrNotExist).AnyTimes()
+
 	type want struct {
 		code            int
 		responseContain string
@@ -152,18 +160,23 @@ func TestHandler_GetShort(t *testing.T) {
 	}
 }
 
-func TestHandler_MakeShort(t *testing.T) {
+func TestHandler_MockMakeShort(t *testing.T) {
 	conf := config.NewConfig()
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath}), conf)
-	h := NewHandler(s, logger).
-		Handler()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := mocks.NewMockRepository(ctrl)
+	s := service.NewService(repo, conf)
+	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
 	// save some values
 	testURL := "https://practicum.yandex.ru/"
+	testShortURL := helper.NewRandShorter().RandStringBytes().String()
+
+	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
 
 	type want struct {
 		code            int
@@ -238,10 +251,14 @@ func TestHandler_MakeShort(t *testing.T) {
 	}
 }
 
-func TestHandler_MakeShortJSON(t *testing.T) {
+func TestHandler_MockMakeShortJSON(t *testing.T) {
 	conf := config.NewConfig()
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath}), conf)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	repo := mocks.NewMockRepository(ctrl)
+
+	s := service.NewService(repo, conf)
 	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
@@ -249,6 +266,10 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 
 	// save some values
 	testURL := "https://practicum.yandex.ru/"
+
+	testShortURL := helper.NewRandShorter().RandStringBytes().String()
+
+	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
 
 	type want struct {
 		code            int

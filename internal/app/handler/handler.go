@@ -36,7 +36,9 @@ func (h *Handler) Handler() http.Handler {
 	rootRoute.GET("/:id", h.GetShort())
 
 	apiRoute := rootRoute.Group(config.APIRoute)
-	apiRoute.POST(config.ShortenRoute, h.MakeShortJSON())
+	shortApiRoute := apiRoute.Group(config.ShortenRoute)
+	shortApiRoute.POST("/", h.MakeShortJSON())
+	shortApiRoute.POST(config.BatchRoute, h.MakeShortBatch())
 
 	return h.r
 }

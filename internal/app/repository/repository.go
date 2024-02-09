@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -11,6 +12,7 @@ type DataStorage interface {
 	NewShort(url string) (newURL string, err error)
 	GetAll() (Store, error)
 	RestoreAll(Store) error
+	NewShortBatch([]domain.ShortBatchInputItem, string) ([]domain.ShortBatchResultItem, error)
 }
 
 type Repository interface {

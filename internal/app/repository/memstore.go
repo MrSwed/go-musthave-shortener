@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	"sync"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
@@ -59,4 +60,18 @@ func (r *MemStorageRepository) GetAll() (Store, error) {
 func (r *MemStorageRepository) RestoreAll(data Store) error {
 	r.Data = data
 	return nil
+}
+
+func (r *MemStorageRepository) NewShortBatch(input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
+	for _, i := range input {
+		var short string
+		if short, err = r.NewShort(i.OriginalURL); err != nil {
+			return
+		}
+		out = append(out, domain.ShortBatchResultItem{
+			CorrelationTD: i.CorrelationID,
+			ShortURL:      prefix + short,
+		})
+	}
+	return
 }

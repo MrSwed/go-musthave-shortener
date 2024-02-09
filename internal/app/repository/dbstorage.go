@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErrs "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 
@@ -113,4 +113,44 @@ func (r *DBStorageRepo) RestoreAll(data Store) (err error) {
 	return
 }
 
-/**/
+func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
+	var (
+		tx  pgx.Tx
+		ctx = context.Background()
+	)
+	tx, err = r.db.Begin(ctx)
+	if err != nil {
+		return
+	}
+	defer func() {
+		rErr := tx.Rollback(ctx)
+		if rErr != nil && !errors.Is(rErr, pgx.ErrTxClosed) {
+			err = errors.Join(err, rErr)
+		}
+	}()
+
+	for _, i := range input {
+		for {
+			newShort := helper.NewRandShorter().RandStringBytes().String()
+			row := tx.QueryRow(ctx, "select count(short) from "+config.DBTableName+" where short = $1", newShort)
+			var exist int
+			if err = row.Scan(&exist); err != nil {
+				return
+			}
+			if exist > 0 {
+				continue
+			}
+			if _, err = tx.Exec(ctx, "INSERT INTO "+config.DBTableName+" (short, url) VALUES($1, $2)", newShort, i.OriginalURL); err == nil {
+				out = append(out, domain.ShortBatchResultItem{
+					CorrelationTD: i.CorrelationID,
+					ShortURL:      prefix + newShort,
+				})
+				break
+			} else {
+				return
+			}
+		}
+	}
+	err = errors.Join(err, tx.Commit(ctx))
+	return
+}

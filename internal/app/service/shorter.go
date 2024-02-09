@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
@@ -13,6 +15,7 @@ type Shorter interface {
 	CheckDB() error
 	GetAll() (repository.Store, error)
 	RestoreAll(repository.Store) error
+	NewShortBatch([]domain.ShortBatchInputItem) ([]domain.ShortBatchResultItem, error)
 }
 
 type ShorterService struct {
@@ -27,7 +30,7 @@ func NewShorterService(r repository.Repository, c *config.Config) ShorterService
 func (s ShorterService) NewShort(url string) (newURL string, err error) {
 	var newShort string
 	if newShort, err = s.r.NewShort(url); err == nil {
-		newURL = fmt.Sprintf("%s%s/%s", s.c.Scheme, s.c.BaseURL, newShort)
+		newURL = s.c.Scheme + s.c.BaseURL + "/" + newShort
 	}
 
 	return
@@ -54,4 +57,13 @@ func (s ShorterService) GetAll() (repository.Store, error) {
 
 func (s ShorterService) RestoreAll(data repository.Store) error {
 	return s.r.RestoreAll(data)
+}
+
+func (s ShorterService) NewShortBatch(input []domain.ShortBatchInputItem) (out []domain.ShortBatchResultItem, err error) {
+	validate := validator.New()
+	if err = validate.Struct(domain.ShortBatchInput{List: input}); err != nil {
+		return
+	}
+
+	return s.r.NewShortBatch(input, s.c.Scheme+s.c.BaseURL+"/")
 }

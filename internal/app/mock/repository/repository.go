@@ -7,6 +7,7 @@ package mock
 import (
 	reflect "reflect"
 
+	domain "github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	repository "github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -77,6 +78,21 @@ func (m *MockRepository) NewShort(arg0 string) (string, error) {
 func (mr *MockRepositoryMockRecorder) NewShort(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShort", reflect.TypeOf((*MockRepository)(nil).NewShort), arg0)
+}
+
+// NewShortBatch mocks base method.
+func (m *MockRepository) NewShortBatch(arg0 []domain.ShortBatchInputItem, arg1 string) ([]domain.ShortBatchResultItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewShortBatch", arg0, arg1)
+	ret0, _ := ret[0].([]domain.ShortBatchResultItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewShortBatch indicates an expected call of NewShortBatch.
+func (mr *MockRepositoryMockRecorder) NewShortBatch(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShortBatch", reflect.TypeOf((*MockRepository)(nil).NewShortBatch), arg0, arg1)
 }
 
 // Restore mocks base method.

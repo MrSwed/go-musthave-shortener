@@ -2,10 +2,9 @@ package handler
 
 import (
 	"errors"
-	"net/http"
-
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pquerna/ffjson/ffjson"
@@ -54,6 +53,32 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.WithField("Error", err).Error("Error create new short")
+		}
+		c.JSON(http.StatusCreated, result)
+	}
+}
+
+func (h *Handler) MakeShortBatch() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var (
+			input  []domain.ShortBatchInputItem
+			result []domain.ShortBatchResultItem
+			err    error
+			body   []byte
+		)
+
+		if body, err = c.GetRawData(); err != nil || len(body) == 0 {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		if err = ffjson.NewDecoder().Decode(body, &input); err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		result, err = h.s.NewShortBatch(input)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			h.log.WithField("Error", err).Error("Error create new batch shorts")
 		}
 		c.JSON(http.StatusCreated, result)
 	}

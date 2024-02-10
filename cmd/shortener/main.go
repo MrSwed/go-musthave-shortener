@@ -26,11 +26,7 @@ func main() {
 	conf := config.NewConfig().Init()
 	var err error
 	logger := logrus.New()
-	logger.WithFields(logrus.Fields{
-		"Server Address":  conf.ServerAddress,
-		"Base URL":        conf.BaseURL,
-		"FileStoragePath": conf.FileStoragePath,
-	}).Info("Start server")
+	logger.WithFields(logrus.Fields{"config": conf}).Info("Start server")
 
 	var (
 		db      *pgxpool.Pool

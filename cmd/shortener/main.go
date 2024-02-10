@@ -37,7 +37,7 @@ func main() {
 		isNewDB = true
 	)
 	if len(conf.DatabaseDSN) > 0 {
-		if db, err = connectPostgres(conf.DatabaseDSN); err != nil {
+		if db, err = pgxpool.New(context.Background(), conf.DatabaseDSN); err != nil {
 			logger.WithError(err).Fatal("cannot connect db")
 		}
 		logger.Info("DB connected")
@@ -116,17 +116,5 @@ func main() {
 		}
 	}
 	logger.Info("Server stopped")
-
-}
-
-func connectPostgres(sbDSN string) (db *pgxpool.Pool, err error) {
-	var poolConfig *pgxpool.Config
-	poolConfig, err = pgxpool.ParseConfig(sbDSN)
-	if err != nil {
-		return
-	}
-
-	db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
-	return
 
 }

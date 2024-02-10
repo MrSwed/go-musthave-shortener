@@ -31,14 +31,14 @@ func (h *Handler) Handler() http.Handler {
 		c.AbortWithStatus(http.StatusBadRequest)
 	})
 	rootRoute := h.r.Group("/")
-	rootRoute.POST("/", h.MakeShort())
+	rootRoute.POST("", h.MakeShort())
 	rootRoute.GET("/ping", h.GetDBPing())
 	rootRoute.GET("/:id", h.GetShort())
 
 	apiRoute := rootRoute.Group(config.APIRoute)
-	shortApiRoute := apiRoute.Group(config.ShortenRoute)
-	shortApiRoute.POST("/", h.MakeShortJSON())
-	shortApiRoute.POST(config.BatchRoute, h.MakeShortBatch())
+	shortAPIRoute := apiRoute.Group(config.ShortenRoute)
+	shortAPIRoute.POST("", h.MakeShortJSON())
+	shortAPIRoute.POST(config.BatchRoute, h.MakeShortBatch())
 
 	return h.r
 }

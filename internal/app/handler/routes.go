@@ -2,11 +2,13 @@ package handler
 
 import (
 	"errors"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
-	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"net/http"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
+
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/pquerna/ffjson/ffjson"
 )
 
@@ -82,10 +84,15 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		result, err = h.s.NewShortBatch(input)
-		if err != nil {
-			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error create new batch shorts")
+
+		if result, err = h.s.NewShortBatch(input); err != nil {
+			if errors.As(err, &validator.ValidationErrors{}) {
+				c.String(http.StatusBadRequest, err.Error())
+			} else {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				h.log.WithField("Error", err).Error("Error create new batch shorts")
+				return
+			}
 		}
 		c.JSON(http.StatusCreated, result)
 	}

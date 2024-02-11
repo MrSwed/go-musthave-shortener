@@ -22,13 +22,17 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 			h.log.WithField("Error", err).Error("Error get body")
 			return
 		}
-		html, err := h.s.NewShort(string(url))
-		if err != nil {
+		var html string
+		if html, err = h.s.NewShort(string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.WithField("Error", err).Error("Error create new short")
 		}
 		c.Header("Content-Type", "text/plain; charset=utf-8")
-		c.String(http.StatusCreated, html)
+		status := http.StatusCreated
+		if errors.Is(err, myErr.ErrAlreadyExist) {
+			status = http.StatusConflict
+		}
+		c.String(status, html)
 	}
 }
 
@@ -49,12 +53,15 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		result.Result, err = h.s.NewShort(url.URL)
-		if err != nil {
+		if result.Result, err = h.s.NewShort(url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.WithField("Error", err).Error("Error create new short")
 		}
-		c.JSON(http.StatusCreated, result)
+		status := http.StatusCreated
+		if errors.Is(err, myErr.ErrAlreadyExist) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, result)
 	}
 }
 

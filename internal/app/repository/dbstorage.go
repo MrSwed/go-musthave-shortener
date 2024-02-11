@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
@@ -52,7 +51,8 @@ func (r *DBStorageRepo) saveNew(item DBStorageItem) (err error) {
 }
 
 func (r *DBStorageRepo) NewShort(url string) (short string, err error) {
-	for newShort := helper.NewRandShorter().RandStringBytes(); ; {
+	for {
+		newShort := helper.NewRandShorter().RandStringBytes()
 		if errS := r.saveNew(DBStorageItem{Short: newShort.String(), URL: url}); errS == nil {
 			short = newShort.String()
 			break
@@ -74,12 +74,27 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 	row := r.db.QueryRow(context.Background(), sqlStr, k)
 	var item = DBStorageItem{}
 	if err = row.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			err = myErrs.ErrNotExist
 		}
 		return
 	}
 	v = item.URL
+	return
+}
+
+func (r *DBStorageRepo) GetFromURL(url string) (v string, err error) {
+	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE url = $1`
+	row := r.db.QueryRow(context.Background(), sqlStr, url)
+
+	var item = DBStorageItem{}
+	if err = row.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = nil
+		}
+		return
+	}
+	v = item.Short
 	return
 }
 
@@ -126,13 +141,23 @@ func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix
 		rErr := tx.Rollback(ctx)
 		if rErr != nil && !errors.Is(rErr, pgx.ErrTxClosed) {
 			err = errors.Join(err, rErr)
+			out = nil
 		}
 	}()
 
 	for _, i := range input {
 		for {
-			newShort := helper.NewRandShorter().RandStringBytes().String()
-			row := tx.QueryRow(ctx, "select count(short) from "+config.DBTableName+" where short = $1", newShort)
+			var newShort string
+			row := tx.QueryRow(ctx, "select short from "+config.DBTableName+" where url = $1", i.OriginalURL)
+			if err = row.Scan(&newShort); err == nil {
+				out = append(out, domain.ShortBatchResultItem{
+					CorrelationTD: i.CorrelationID,
+					ShortURL:      prefix + newShort,
+				})
+				break
+			}
+			newShort = helper.NewRandShorter().RandStringBytes().String()
+			row = tx.QueryRow(ctx, "select count(short) from "+config.DBTableName+" where short = $1", newShort)
 			var exist int
 			if err = row.Scan(&exist); err != nil {
 				return

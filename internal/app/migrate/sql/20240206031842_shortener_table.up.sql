@@ -7,5 +7,6 @@ create table shortener
   constraint shortener_short
    unique,
  url   varchar(2048)                  not null
-)
-
+  constraint shortener_url
+   unique
+);

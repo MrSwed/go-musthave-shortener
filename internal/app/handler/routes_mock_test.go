@@ -177,6 +177,7 @@ func TestHandler_MockMakeShort(t *testing.T) {
 	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
 	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
+	_ = repo.EXPECT().GetFromURL(testURL).Return("", nil).AnyTimes()
 
 	type want struct {
 		code            int
@@ -270,6 +271,8 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
 	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
+	_ = repo.EXPECT().NewShort(gomock.Any()).Return(helper.NewRandShorter().RandStringBytes().String(), nil).AnyTimes()
+	_ = repo.EXPECT().GetFromURL(gomock.Any()).Return("", nil).AnyTimes()
 
 	type want struct {
 		code            int
@@ -346,7 +349,7 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": testURL,
+					"url": "https://practicum.yandex.ru/?1",
 				},
 				headers: map[string]string{
 					"Accept-Encoding": "gzip",
@@ -366,7 +369,7 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": testURL,
+					"url": "https://practicum.yandex.ru/?2",
 				},
 				headers: map[string]string{
 					"Accept-Encoding": "gzip",
@@ -383,7 +386,7 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": testURL,
+					"url": "https://practicum.yandex.ru/?3",
 				},
 				headers: map[string]string{
 					"Content-Encoding": "gzip",

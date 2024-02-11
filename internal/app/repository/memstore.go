@@ -25,7 +25,8 @@ func NewMemRepository() *MemStorageRepository {
 func (r *MemStorageRepository) NewShort(url string) (short string, err error) {
 	r.mg.Lock()
 	defer r.mg.Unlock()
-	for newShort := helper.NewRandShorter().RandStringBytes(); ; {
+	for {
+		newShort := helper.NewRandShorter().RandStringBytes()
 		if _, exist := r.Data[newShort]; !exist {
 			r.Data[newShort] = storeItem{
 				uuid: uuid.New().String(),
@@ -53,6 +54,18 @@ func (r *MemStorageRepository) GetFromShort(k string) (v string, err error) {
 	return
 }
 
+func (r *MemStorageRepository) GetFromURL(url string) (v string, err error) {
+	r.mg.Lock()
+	defer r.mg.Unlock()
+	for sk, item := range r.Data {
+		if item.url == url {
+			return sk.String(), nil
+		}
+	}
+
+	return
+}
+
 func (r *MemStorageRepository) GetAll() (Store, error) {
 	return r.Data, nil
 }
@@ -65,8 +78,13 @@ func (r *MemStorageRepository) RestoreAll(data Store) error {
 func (r *MemStorageRepository) NewShortBatch(input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
 	for _, i := range input {
 		var short string
-		if short, err = r.NewShort(i.OriginalURL); err != nil {
+		if short, err = r.GetFromURL(i.OriginalURL); err != nil {
 			return
+		}
+		if short == "" {
+			if short, err = r.NewShort(i.OriginalURL); err != nil {
+				return
+			}
 		}
 		out = append(out, domain.ShortBatchResultItem{
 			CorrelationTD: i.CorrelationID,

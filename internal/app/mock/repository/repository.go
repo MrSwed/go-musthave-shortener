@@ -65,6 +65,21 @@ func (mr *MockRepositoryMockRecorder) GetFromShort(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromShort", reflect.TypeOf((*MockRepository)(nil).GetFromShort), arg0)
 }
 
+// GetFromURL mocks base method.
+func (m *MockRepository) GetFromURL(arg0 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFromURL", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFromURL indicates an expected call of GetFromURL.
+func (mr *MockRepositoryMockRecorder) GetFromURL(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromURL", reflect.TypeOf((*MockRepository)(nil).GetFromURL), arg0)
+}
+
 // NewShort mocks base method.
 func (m *MockRepository) NewShort(arg0 string) (string, error) {
 	m.ctrl.T.Helper()

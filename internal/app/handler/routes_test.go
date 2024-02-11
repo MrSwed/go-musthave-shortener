@@ -247,9 +247,6 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	// save some values
-	testURL := "https://practicum.yandex.ru/"
-
 	type want struct {
 		code            int
 		responseContain string
@@ -271,7 +268,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": testURL,
+					"url": "https://practicum.yandex.ru/?1",
 				},
 			},
 			want: want{
@@ -294,7 +291,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"somekey": testURL,
+					"somekey": "https://practicum.yandex.ru/?2",
 				},
 			},
 			want: want{
@@ -305,7 +302,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			name: "Post wrong json body",
 			args: args{
 				method: http.MethodPost,
-				data:   testURL,
+				data:   "https://practicum.yandex.ru/?3",
 			},
 			want: want{
 				code: http.StatusBadRequest,
@@ -325,7 +322,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": testURL,
+					"url": "https://practicum.yandex.ru/?4",
 				},
 				headers: map[string]string{
 					"Accept-Encoding": "gzip",
@@ -345,7 +342,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": testURL,
+					"url": "https://practicum.yandex.ru/?5",
 				},
 				headers: map[string]string{
 					"Accept-Encoding": "gzip",
@@ -362,7 +359,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": testURL,
+					"url": "https://practicum.yandex.ru/?6",
 				},
 				headers: map[string]string{
 					"Content-Encoding": "gzip",

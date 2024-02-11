@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/go-playground/validator/v10"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
@@ -27,12 +28,22 @@ func NewShorterService(r repository.Repository, c *config.Config) ShorterService
 	return ShorterService{r: r, c: c}
 }
 
+func (s ShorterService) fulNewShort(short string) string {
+	return s.c.Scheme + s.c.BaseURL + "/" + short
+
+}
 func (s ShorterService) NewShort(url string) (newURL string, err error) {
 	var newShort string
-	if newShort, err = s.r.NewShort(url); err == nil {
-		newURL = s.c.Scheme + s.c.BaseURL + "/" + newShort
+	if newShort, err = s.r.GetFromURL(url); err != nil {
+		return
+	}
+	if newShort != "" {
+		err = myErr.ErrAlreadyExist
+	} else if newShort, err = s.r.NewShort(url); err != nil {
+		return
 	}
 
+	newURL = s.fulNewShort(newShort)
 	return
 }
 

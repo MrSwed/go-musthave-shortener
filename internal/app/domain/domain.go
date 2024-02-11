@@ -16,6 +16,7 @@ type ShortBatchInputItem struct {
 type ShortBatchInput struct {
 	List []ShortBatchInputItem `validate:"required,gt=0,dive"`
 }
+
 type ShortBatchResultItem struct {
 	CorrelationTD string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`

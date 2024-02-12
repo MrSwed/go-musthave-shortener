@@ -109,6 +109,7 @@ func (r *DBStorageRepo) GetAll() (data Store, err error) {
 			url:  item.URL,
 		}
 	}
+	err = rows.Err()
 	return
 }
 

@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
@@ -10,10 +10,8 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
-	_ "github.com/lib/pq"
+	"github.com/jmoiron/sqlx"
 )
 
 type DBStorageItem struct {
@@ -27,10 +25,10 @@ type DBStorage interface {
 }
 
 type DBStorageRepo struct {
-	db *pgxpool.Pool
+	db *sqlx.DB
 }
 
-func NewDBStorageRepository(db *pgxpool.Pool) *DBStorageRepo {
+func NewDBStorageRepository(db *sqlx.DB) *DBStorageRepo {
 	return &DBStorageRepo{
 		db: db,
 	}
@@ -40,21 +38,20 @@ func (r *DBStorageRepo) Ping() error {
 	if r.db == nil {
 		return fmt.Errorf("no DB connected")
 	}
-	return r.db.Ping(context.Background())
+	return r.db.Ping()
 }
 
 func (r *DBStorageRepo) saveNew(item DBStorageItem) (err error) {
-	_, err = r.db.Exec(context.Background(),
-		"insert into "+config.DBTableName+" (short, url) values ($1, $2)",
+	_, err = r.db.Exec("insert into "+config.DBTableName+" (short, url) values ($1, $2)",
 		item.Short, item.URL)
 	return
 }
 
 func (r *DBStorageRepo) NewShort(url string) (short string, err error) {
 	for {
-		newShort := helper.NewRandShorter().RandStringBytes()
-		if errS := r.saveNew(DBStorageItem{Short: newShort.String(), URL: url}); errS == nil {
-			short = newShort.String()
+		newShort := helper.NewRandShorter().RandStringBytes().String()
+		if errS := r.saveNew(DBStorageItem{Short: newShort, URL: url}); errS == nil {
+			short = newShort
 			break
 		} else if errP, ok := errS.(*pgconn.PgError); !ok || errP.Code != pgerrcode.UniqueViolation {
 			err = errS
@@ -69,12 +66,10 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 		err = myErrs.ErrNotExist
 		return
 	}
-
 	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE short = $1`
-	row := r.db.QueryRow(context.Background(), sqlStr, k)
 	var item = DBStorageItem{}
-	if err = row.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+	if err = r.db.Get(&item, sqlStr, k); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			err = myErrs.ErrNotExist
 		}
 		return
@@ -84,12 +79,10 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 }
 
 func (r *DBStorageRepo) GetFromURL(url string) (v string, err error) {
-	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE url = $1`
-	row := r.db.QueryRow(context.Background(), sqlStr, url)
-
 	var item = DBStorageItem{}
-	if err = row.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE url = $1`
+	if err = r.db.Get(&item, sqlStr, url); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
 		}
 		return
@@ -101,11 +94,11 @@ func (r *DBStorageRepo) GetFromURL(url string) (v string, err error) {
 func (r *DBStorageRepo) GetAll() (data Store, err error) {
 	data = make(Store)
 	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName
-	var rows pgx.Rows
-	if rows, err = r.db.Query(context.Background(), sqlStr); err != nil {
+	var rows *sql.Rows
+	if rows, err = r.db.Query(sqlStr); err != nil {
 		return
 	}
-	defer rows.Close()
+	defer func() { err = rows.Close() }()
 	for rows.Next() {
 		var item = DBStorageItem{}
 		if err = rows.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
@@ -130,16 +123,15 @@ func (r *DBStorageRepo) RestoreAll(data Store) (err error) {
 
 func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
 	var (
-		tx  pgx.Tx
-		ctx = context.Background()
+		tx *sqlx.Tx
 	)
-	tx, err = r.db.Begin(ctx)
+	tx, err = r.db.Beginx()
 	if err != nil {
 		return
 	}
 	defer func() {
-		rErr := tx.Rollback(ctx)
-		if rErr != nil && !errors.Is(rErr, pgx.ErrTxClosed) {
+		rErr := tx.Rollback()
+		if rErr != nil && !errors.Is(rErr, sql.ErrTxDone) {
 			err = errors.Join(err, rErr)
 			out = nil
 		}
@@ -148,8 +140,7 @@ func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix
 	for _, i := range input {
 		for {
 			var newShort string
-			row := tx.QueryRow(ctx, "select short from "+config.DBTableName+" where url = $1", i.OriginalURL)
-			if err = row.Scan(&newShort); err == nil {
+			if err = tx.Get(&newShort, "select short from "+config.DBTableName+" where url = $1", i.OriginalURL); err == nil {
 				out = append(out, domain.ShortBatchResultItem{
 					CorrelationTD: i.CorrelationID,
 					ShortURL:      prefix + newShort,
@@ -157,15 +148,14 @@ func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix
 				break
 			}
 			newShort = helper.NewRandShorter().RandStringBytes().String()
-			row = tx.QueryRow(ctx, "select count(short) from "+config.DBTableName+" where short = $1", newShort)
 			var exist int
-			if err = row.Scan(&exist); err != nil {
+			if err = tx.Get(&exist, "select count(short) from "+config.DBTableName+" where short = $1", newShort); err != nil {
 				return
 			}
 			if exist > 0 {
 				continue
 			}
-			if _, err = tx.Exec(ctx, "INSERT INTO "+config.DBTableName+" (short, url) VALUES($1, $2)", newShort, i.OriginalURL); err == nil {
+			if _, err = tx.Exec("INSERT INTO "+config.DBTableName+" (short, url) VALUES($1, $2)", newShort, i.OriginalURL); err == nil {
 				out = append(out, domain.ShortBatchResultItem{
 					CorrelationTD: i.CorrelationID,
 					ShortURL:      prefix + newShort,
@@ -176,6 +166,6 @@ func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix
 			}
 		}
 	}
-	err = errors.Join(err, tx.Commit(ctx))
+	err = errors.Join(err, tx.Commit())
 	return
 }

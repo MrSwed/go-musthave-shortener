@@ -2,7 +2,7 @@ package repository
 
 import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
 //go:generate  mockgen -destination=../mock/repository/repository.go -package=mock "github.com/MrSwed/go-musthave-shortener/internal/app/repository" Repository
@@ -28,7 +28,7 @@ type Storage struct {
 
 type Config struct {
 	StorageFile string
-	DB          *pgxpool.Pool
+	DB          *sqlx.DB
 }
 
 func NewRepository(c Config) (s Storage) {

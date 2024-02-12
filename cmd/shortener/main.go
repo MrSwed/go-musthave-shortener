@@ -16,9 +16,8 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,15 +28,15 @@ func main() {
 	logger.WithFields(logrus.Fields{"config": conf}).Info("Start server")
 
 	var (
-		db      *pgxpool.Pool
+		db      *sqlx.DB
 		isNewDB = true
 	)
 	if len(conf.DatabaseDSN) > 0 {
-		if db, err = pgxpool.New(context.Background(), conf.DatabaseDSN); err != nil {
+		if db, err = sqlx.Open("pgx", conf.DatabaseDSN); err != nil {
 			logger.WithError(err).Fatal("cannot connect db")
 		}
 		logger.Info("DB connected")
-		versions, errM := myMigrate.Migrate(stdlib.OpenDBFromPool(db))
+		versions, errM := myMigrate.Migrate(db.DB)
 		switch {
 		case errors.Is(errM, migrate.ErrNoChange):
 			logger.Info("DB migrate: ", errM, versions)

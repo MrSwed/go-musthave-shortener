@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	serverAddress   = "localhost:18080"
 	baseURL         = "localhost:18080"
 	fileStoragePath = "/tmp/short-url-db-tests.json"
 	databaseDSN     = ""
@@ -34,7 +33,6 @@ const (
 
 func NewTestConfig() (c *config.Config) {
 	c = config.NewConfig()
-	c.ServerAddress = serverAddress
 	c.BaseURL = baseURL
 	c.FileStoragePath = fileStoragePath
 	c.DatabaseDSN = databaseDSN

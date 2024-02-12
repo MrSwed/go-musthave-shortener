@@ -1,3 +1,4 @@
+// to test db set env DATABASE_DSN before run
 package handler
 
 import (
@@ -6,24 +7,56 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	serverAddress   = "localhost:18080"
+	baseURL         = "localhost:18080"
+	fileStoragePath = "/tmp/short-url-db-tests.json"
+	databaseDSN     = ""
+)
+
+func NewTestConfig() (c *config.Config) {
+	c = config.NewConfig()
+	c.ServerAddress = serverAddress
+	c.BaseURL = baseURL
+	c.FileStoragePath = fileStoragePath
+	c.DatabaseDSN = databaseDSN
+	c.WithEnv().CleanParameters()
+
+	var err error
+	if c.DatabaseDSN != "" {
+		if db, err = sqlx.Open("pgx", c.DatabaseDSN); err != nil {
+			log.Fatal(err)
+		}
+	}
+	return
+}
+
+var (
+	conf = NewTestConfig()
+	db   *sqlx.DB
+)
+
 func TestHandler_GetShort(t *testing.T) {
-	conf := config.NewConfig()
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath}), conf)
+	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
 	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
@@ -32,7 +65,7 @@ func TestHandler_GetShort(t *testing.T) {
 	// save some values
 	testURL1 := "https://practicum.yandex.ru/"
 	testURL2 := "https://practicum2.yandex.ru/"
-	localURL := "http://localhost:8080/"
+	localURL := "http://" + baseURL + "/"
 
 	testShort1, _ := s.NewShort(testURL1)
 	testShort2, _ := s.NewShort(testURL2)
@@ -153,9 +186,8 @@ func TestHandler_GetShort(t *testing.T) {
 }
 
 func TestHandler_MakeShort(t *testing.T) {
-	conf := config.NewConfig()
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath}), conf)
+	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
 	h := NewHandler(s, logger).
 		Handler()
 
@@ -163,7 +195,7 @@ func TestHandler_MakeShort(t *testing.T) {
 	defer ts.Close()
 
 	// save some values
-	testURL := "https://practicum.yandex.ru/"
+	testURL := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
 	testURLExist := "https://practicum.yandex.ru/?exist"
 	_, _ = s.NewShort(testURLExist)
 
@@ -253,14 +285,17 @@ func TestHandler_MakeShort(t *testing.T) {
 }
 
 func TestHandler_MakeShortJSON(t *testing.T) {
-	conf := config.NewConfig()
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath}), conf)
+	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
 	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
+	testURL := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
+	testURL1 := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
+	testURL2 := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
+	testURL3 := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
 	testURLExist := "https://practicum.yandex.ru/?exist"
 	_, _ = s.NewShort(testURLExist)
 
@@ -285,7 +320,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": "https://practicum.yandex.ru/?1",
+					"url": testURL,
 				},
 			},
 			want: want{
@@ -353,7 +388,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": "https://practicum.yandex.ru/?4",
+					"url": testURL1,
 				},
 				headers: map[string]string{
 					"Accept-Encoding": "gzip",
@@ -373,7 +408,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": "https://practicum.yandex.ru/?5",
+					"url": testURL2,
 				},
 				headers: map[string]string{
 					"Accept-Encoding": "gzip",
@@ -390,7 +425,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 			args: args{
 				method: http.MethodPost,
 				data: map[string]string{
-					"url": "https://practicum.yandex.ru/?6",
+					"url": testURL3,
 				},
 				headers: map[string]string{
 					"Content-Encoding": "gzip",
@@ -479,9 +514,8 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	}
 }
 func TestHandler_MakeShortBatch(t *testing.T) {
-	conf := config.NewConfig()
 	logger := logrus.New()
-	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath}), conf)
+	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
 	h := NewHandler(s, logger).Handler()
 
 	ts := httptest.NewServer(h)

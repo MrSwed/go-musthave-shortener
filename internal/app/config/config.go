@@ -30,10 +30,10 @@ func NewConfig() *Config {
 }
 
 func (c *Config) Init() *Config {
-	return c.withFlags().withEnv().cleanParameters()
+	return c.withFlags().WithEnv().CleanParameters()
 }
 
-func (c *Config) withEnv() *Config {
+func (c *Config) WithEnv() *Config {
 	if envAddress, ok := os.LookupEnv(envServerAddressName); ok && envAddress != "" {
 		c.ServerAddress = envAddress
 	}
@@ -58,7 +58,7 @@ func (c *Config) withFlags() *Config {
 	return c
 }
 
-func (c *Config) cleanParameters() *Config {
+func (c *Config) CleanParameters() *Config {
 	c.ServerAddress = strings.TrimPrefix(c.ServerAddress, "http://")
 	c.ServerAddress = strings.TrimPrefix(c.ServerAddress, "https://")
 	c.BaseURL = strings.TrimPrefix(c.BaseURL, "http://")

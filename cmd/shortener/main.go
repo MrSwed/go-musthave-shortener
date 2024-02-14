@@ -83,10 +83,15 @@ func runServer(ctx context.Context) {
 		Addr:    conf.ServerAddress,
 		Handler: h.Handler(),
 	}
-
+	lockDbCLose := make(chan struct{})
 	c.Add("WEB", server.Shutdown)
 	if conf.FileStoragePath != "" {
 		c.Add("FileStorage", func(ctx context.Context) error {
+			defer func() {
+				if db != nil {
+					close(lockDbCLose)
+				}
+			}()
 			if store, err := s.GetAll(); err != nil {
 				logrus.WithError(err).Error("Can get data for save to disk")
 				return err
@@ -98,9 +103,12 @@ func runServer(ctx context.Context) {
 			}
 			return nil
 		})
+	} else {
+		close(lockDbCLose)
 	}
 	if db != nil {
 		c.Add("DB", func(ctx context.Context) (err error) {
+			<-lockDbCLose
 			if err = db.Close(); err != nil {
 				logrus.WithError(err).Error("DB close")
 			} else {

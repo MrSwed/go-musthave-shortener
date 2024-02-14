@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/closer"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/handler"
 	myMigrate "github.com/MrSwed/go-musthave-shortener/internal/app/migrate"
@@ -22,6 +22,13 @@ import (
 )
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+
+	runServer(ctx)
+}
+
+func runServer(ctx context.Context) {
 	conf := config.NewConfig().Init()
 	var err error
 	logger := logrus.New()
@@ -30,6 +37,7 @@ func main() {
 	var (
 		db      *sqlx.DB
 		isNewDB = true
+		c       = &closer.Closer{}
 	)
 	if len(conf.DatabaseDSN) > 0 {
 		if db, err = sqlx.Open("pgx", conf.DatabaseDSN); err != nil {
@@ -71,45 +79,48 @@ func main() {
 		Handler: h.Handler(),
 	}
 
-	serverCtx, serverStop := context.WithCancel(context.Background())
-
-	exitSig := make(chan os.Signal, 1)
-	signal.Notify(exitSig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	c.Add("WEB", server.Shutdown)
+	if conf.FileStoragePath != "" {
+		c.Add("FileStorage", func(ctx context.Context) error {
+			if store, err := s.GetAll(); err != nil {
+				logger.WithError(err).Error("Can get data for save to disk")
+				return err
+			} else if err := r.FileStorage.Save(store); err != nil {
+				logger.WithError(err).Error("Can not save data")
+				return err
+			} else {
+				logger.Info("Storage saved")
+			}
+			return nil
+		})
+	}
+	if db != nil {
+		c.Add("DB", func(ctx context.Context) (err error) {
+			if err = db.Close(); err != nil {
+				logger.WithError(err).Error("DB close")
+			} else {
+				logger.Info("Db Closed")
+			}
+			return
+		})
+	}
 
 	go func() {
-		<-exitSig
-
-		shutdownCtx, shutdownStopForce := context.WithTimeout(serverCtx, config.ServerShutdownTimeout*time.Second)
-		defer shutdownStopForce()
-		go func() {
-			<-shutdownCtx.Done()
-			if errors.Is(shutdownCtx.Err(), context.DeadlineExceeded) {
-				logger.Error("graceful shutdown timed out.. forcing exit.")
-			}
-		}()
-
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			logger.WithError(err).Error("shutdown")
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.WithError(err).Error("Start server")
 		}
-		serverStop()
 	}()
+	logger.Info("Server started")
+	<-ctx.Done()
 
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logger.WithError(err).Error("Start server")
-		serverStop()
+	logger.Info("Shutting down server gracefully")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), config.ServerShutdownTimeout*time.Second)
+	defer cancel()
+
+	if err = c.Close(shutdownCtx); err != nil {
+		logger.Error(err)
 	}
 
-	<-serverCtx.Done()
-
-	if conf.FileStoragePath != "" {
-		if store, err := s.GetAll(); err != nil {
-			logger.WithError(err).Error("Can get data for save to disk")
-		} else if err := r.FileStorage.Save(store); err != nil {
-			logger.WithError(err).Error("Can not save data")
-		} else {
-			logger.Info("Storage saved")
-		}
-	}
 	logger.Info("Server stopped")
-
 }

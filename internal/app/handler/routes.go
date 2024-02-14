@@ -88,6 +88,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 		if result, err = h.s.NewShortBatch(input); err != nil {
 			if errors.As(err, &validator.ValidationErrors{}) {
 				c.String(http.StatusBadRequest, err.Error())
+				return
 			} else {
 				c.AbortWithStatus(http.StatusInternalServerError)
 				h.log.WithField("Error", err).Error("Error create new batch shorts")

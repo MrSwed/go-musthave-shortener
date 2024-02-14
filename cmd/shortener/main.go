@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -119,11 +120,11 @@ func runServer(ctx context.Context) {
 
 	logrus.Info("Shutting down server gracefully")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), config.ServerShutdownTimeout*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), constant.ServerShutdownTimeout*time.Second)
 	defer cancel()
 
 	if err = c.Close(shutdownCtx); err != nil {
-		logrus.Error(err, ". timeout: ", config.ServerShutdownTimeout)
+		logrus.Error(err, ". timeout: ", constant.ServerShutdownTimeout)
 	}
 
 	logrus.Info("Server stopped")

@@ -2,9 +2,9 @@ package handler
 
 import (
 	"compress/gzip"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"net/http"
 
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/logger"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/middleware"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
@@ -35,10 +35,10 @@ func (h *Handler) Handler() http.Handler {
 	rootRoute.GET("/ping", h.GetDBPing())
 	rootRoute.GET("/:id", h.GetShort())
 
-	apiRoute := rootRoute.Group(config.APIRoute)
-	shortAPIRoute := apiRoute.Group(config.ShortenRoute)
+	apiRoute := rootRoute.Group(constant.APIRoute)
+	shortAPIRoute := apiRoute.Group(constant.ShortenRoute)
 	shortAPIRoute.POST("", h.MakeShortJSON())
-	shortAPIRoute.POST(config.BatchRoute, h.MakeShortBatch())
+	shortAPIRoute.POST(constant.BatchRoute, h.MakeShortBatch())
 
 	return h.r
 }

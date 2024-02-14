@@ -2,11 +2,12 @@ package config
 
 import (
 	"flag"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"os"
 	"strings"
 )
 
-type ShortKey [ShortLen]byte
+type ShortKey [constant.ShortLen]byte
 
 func (s ShortKey) String() string {
 	return string(s[:])
@@ -22,10 +23,10 @@ type Config struct {
 
 func NewConfig() *Config {
 	return &Config{
-		ServerAddress:   serverAddress,
-		BaseURL:         baseURL,
-		FileStoragePath: fileStoragePath,
-		Scheme:          scheme,
+		ServerAddress:   constant.ServerAddress,
+		BaseURL:         constant.BaseURL,
+		FileStoragePath: constant.FileStoragePath,
+		Scheme:          constant.Scheme,
 	}
 }
 
@@ -34,16 +35,16 @@ func (c *Config) Init() *Config {
 }
 
 func (c *Config) WithEnv() *Config {
-	if envAddress, ok := os.LookupEnv(envServerAddressName); ok && envAddress != "" {
+	if envAddress, ok := os.LookupEnv(constant.EnvServerAddressName); ok && envAddress != "" {
 		c.ServerAddress = envAddress
 	}
-	if envBaseURL, ok := os.LookupEnv(envBaseURLName); ok && envBaseURL != "" {
+	if envBaseURL, ok := os.LookupEnv(constant.EnvBaseURLName); ok && envBaseURL != "" {
 		c.BaseURL = envBaseURL
 	}
-	if envFileStoragePath, ok := os.LookupEnv(envFileStoragePathName); ok && envFileStoragePath != "" {
+	if envFileStoragePath, ok := os.LookupEnv(constant.EnvFileStoragePathName); ok && envFileStoragePath != "" {
 		c.FileStoragePath = envFileStoragePath
 	}
-	if dbDSN, ok := os.LookupEnv(envNameDBDSN); ok {
+	if dbDSN, ok := os.LookupEnv(constant.EnvNameDBDSN); ok {
 		c.DatabaseDSN = dbDSN
 	}
 	return c

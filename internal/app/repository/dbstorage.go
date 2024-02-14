@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErrs "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
@@ -42,7 +43,7 @@ func (r *DBStorageRepo) Ping() error {
 }
 
 func (r *DBStorageRepo) saveNew(item DBStorageItem) (err error) {
-	_, err = r.db.Exec("insert into "+config.DBTableName+" (short, url) values ($1, $2)",
+	_, err = r.db.Exec("insert into "+constant.DBTableName+" (short, url) values ($1, $2)",
 		item.Short, item.URL)
 	return
 }
@@ -66,7 +67,7 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 		err = myErrs.ErrNotExist
 		return
 	}
-	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE short = $1`
+	sqlStr := `SELECT uuid, short, url FROM ` + constant.DBTableName + ` WHERE short = $1`
 	var item = DBStorageItem{}
 	if err = r.db.Get(&item, sqlStr, k); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -80,7 +81,7 @@ func (r *DBStorageRepo) GetFromShort(k string) (v string, err error) {
 
 func (r *DBStorageRepo) GetFromURL(url string) (v string, err error) {
 	var item = DBStorageItem{}
-	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName + ` WHERE url = $1`
+	sqlStr := `SELECT uuid, short, url FROM ` + constant.DBTableName + ` WHERE url = $1`
 	if err = r.db.Get(&item, sqlStr, url); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
@@ -93,7 +94,7 @@ func (r *DBStorageRepo) GetFromURL(url string) (v string, err error) {
 
 func (r *DBStorageRepo) GetAll() (data Store, err error) {
 	data = make(Store)
-	sqlStr := `SELECT uuid, short, url FROM ` + config.DBTableName
+	sqlStr := `SELECT uuid, short, url FROM ` + constant.DBTableName
 	var rows *sql.Rows
 	if rows, err = r.db.Query(sqlStr); err != nil {
 		return
@@ -141,7 +142,7 @@ func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix
 	for _, i := range input {
 		for {
 			var newShort string
-			if err = tx.Get(&newShort, "select short from "+config.DBTableName+" where url = $1", i.OriginalURL); err == nil {
+			if err = tx.Get(&newShort, "select short from "+constant.DBTableName+" where url = $1", i.OriginalURL); err == nil {
 				out = append(out, domain.ShortBatchResultItem{
 					CorrelationTD: i.CorrelationID,
 					ShortURL:      prefix + newShort,
@@ -150,13 +151,13 @@ func (r *DBStorageRepo) NewShortBatch(input []domain.ShortBatchInputItem, prefix
 			}
 			newShort = helper.NewRandShorter().RandStringBytes().String()
 			var exist int
-			if err = tx.Get(&exist, "select count(short) from "+config.DBTableName+" where short = $1", newShort); err != nil {
+			if err = tx.Get(&exist, "select count(short) from "+constant.DBTableName+" where short = $1", newShort); err != nil {
 				return
 			}
 			if exist > 0 {
 				continue
 			}
-			if _, err = tx.Exec("INSERT INTO "+config.DBTableName+" (short, url) VALUES($1, $2)", newShort, i.OriginalURL); err == nil {
+			if _, err = tx.Exec("INSERT INTO "+constant.DBTableName+" (short, url) VALUES($1, $2)", newShort, i.OriginalURL); err == nil {
 				out = append(out, domain.ShortBatchResultItem{
 					CorrelationTD: i.CorrelationID,
 					ShortURL:      prefix + newShort,

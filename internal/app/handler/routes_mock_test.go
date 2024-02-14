@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -419,7 +420,7 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			req, err := http.NewRequest(test.args.method, ts.URL+config.APIRoute+config.ShortenRoute, b)
+			req, err := http.NewRequest(test.args.method, ts.URL+constant.APIRoute+constant.ShortenRoute, b)
 			require.NoError(t, err)
 			defer req.Context()
 

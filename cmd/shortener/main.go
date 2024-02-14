@@ -31,8 +31,12 @@ func main() {
 func runServer(ctx context.Context) {
 	conf := config.NewConfig().Init()
 	var err error
-	logger := logrus.New()
-	logger.WithFields(logrus.Fields{"config": conf}).Info("Start server")
+	logrus.SetFormatter(&logrus.TextFormatter{
+		TimestampFormat: "2006-01-02 15:04:05",
+		FullTimestamp:   true,
+	})
+
+	logrus.WithFields(logrus.Fields{"config": conf}).Info("Start server")
 
 	var (
 		db      *sqlx.DB
@@ -41,35 +45,35 @@ func runServer(ctx context.Context) {
 	)
 	if len(conf.DatabaseDSN) > 0 {
 		if db, err = sqlx.Open("pgx", conf.DatabaseDSN); err != nil {
-			logger.WithError(err).Fatal("cannot connect db")
+			logrus.WithError(err).Fatal("cannot connect db")
 		}
-		logger.Info("DB connected")
+		logrus.Info("DB connected")
 		versions, errM := myMigrate.Migrate(db.DB)
 		switch {
 		case errors.Is(errM, migrate.ErrNoChange):
-			logger.Info("DB migrate: ", errM, versions)
+			logrus.Info("DB migrate: ", errM, versions)
 		case errM == nil:
-			logger.Info("DB migrate: new applied ", versions)
+			logrus.Info("DB migrate: new applied ", versions)
 		default:
-			logger.WithError(err).Fatal("DB migrate: ", versions)
+			logrus.WithError(err).Fatal("DB migrate: ", versions)
 		}
 		isNewDB = versions[0] == 0
 	}
 
 	r := repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
 	s := service.NewService(r, conf)
-	h := handler.NewHandler(s, logger)
+	h := handler.NewHandler(s)
 
 	if conf.FileStoragePath != "" && isNewDB {
 		data, err := r.Restore()
 		if err != nil {
-			logger.WithError(err).Error("Storage restore")
+			logrus.WithError(err).Error("Storage restore")
 		}
 		if data != nil {
 			if err = s.RestoreAll(data); err != nil {
-				logger.Error(err)
+				logrus.Error(err)
 			} else {
-				logger.Info("Storage restored")
+				logrus.Info("Storage restored")
 			}
 		}
 	}
@@ -83,13 +87,13 @@ func runServer(ctx context.Context) {
 	if conf.FileStoragePath != "" {
 		c.Add("FileStorage", func(ctx context.Context) error {
 			if store, err := s.GetAll(); err != nil {
-				logger.WithError(err).Error("Can get data for save to disk")
+				logrus.WithError(err).Error("Can get data for save to disk")
 				return err
 			} else if err := r.FileStorage.Save(store); err != nil {
-				logger.WithError(err).Error("Can not save data")
+				logrus.WithError(err).Error("Can not save data")
 				return err
 			} else {
-				logger.Info("Storage saved")
+				logrus.Info("Storage saved")
 			}
 			return nil
 		})
@@ -97,9 +101,9 @@ func runServer(ctx context.Context) {
 	if db != nil {
 		c.Add("DB", func(ctx context.Context) (err error) {
 			if err = db.Close(); err != nil {
-				logger.WithError(err).Error("DB close")
+				logrus.WithError(err).Error("DB close")
 			} else {
-				logger.Info("Db Closed")
+				logrus.Info("Db Closed")
 			}
 			return
 		})
@@ -107,20 +111,20 @@ func runServer(ctx context.Context) {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.WithError(err).Error("Start server")
+			logrus.WithError(err).Error("Start server")
 		}
 	}()
-	logger.Info("Server started")
+	logrus.Info("Server started")
 	<-ctx.Done()
 
-	logger.Info("Shutting down server gracefully")
+	logrus.Info("Shutting down server gracefully")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), config.ServerShutdownTimeout*time.Second)
 	defer cancel()
 
 	if err = c.Close(shutdownCtx); err != nil {
-		logger.Error(err)
+		logrus.Error(err, ". timeout: ", config.ServerShutdownTimeout)
 	}
 
-	logger.Info("Server stopped")
+	logrus.Info("Server stopped")
 }

@@ -20,7 +20,6 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -53,9 +52,8 @@ var (
 )
 
 func TestHandler_GetShort(t *testing.T) {
-	logger := logrus.New()
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s, logger).Handler()
+	h := NewHandler(s).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -184,9 +182,8 @@ func TestHandler_GetShort(t *testing.T) {
 }
 
 func TestHandler_MakeShort(t *testing.T) {
-	logger := logrus.New()
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s, logger).
+	h := NewHandler(s).
 		Handler()
 
 	ts := httptest.NewServer(h)
@@ -283,9 +280,8 @@ func TestHandler_MakeShort(t *testing.T) {
 }
 
 func TestHandler_MakeShortJSON(t *testing.T) {
-	logger := logrus.New()
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s, logger).Handler()
+	h := NewHandler(s).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -512,9 +508,8 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	}
 }
 func TestHandler_MakeShortBatch(t *testing.T) {
-	logger := logrus.New()
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s, logger).Handler()
+	h := NewHandler(s).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()

@@ -19,11 +19,11 @@ type Handler struct {
 	log *logrus.Logger
 }
 
-func NewHandler(s service.Service, log *logrus.Logger) *Handler { return &Handler{s: s, log: log} }
+func NewHandler(s service.Service) *Handler { return &Handler{s: s} }
 
 func (h *Handler) Handler() http.Handler {
 	h.r = gin.New()
-	h.r.Use(logger.Logger(h.log))
+	h.r.Use(logger.Logger())
 	h.r.Use(middleware.Compress(gzip.DefaultCompression, h.log))
 	h.r.Use(middleware.Decompress(h.log))
 

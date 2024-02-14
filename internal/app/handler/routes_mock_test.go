@@ -18,19 +18,17 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestHandler_MockGetShort(t *testing.T) {
-	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	repo := mocks.NewMockRepository(ctrl)
 	conf := config.NewConfig()
 	s := service.NewService(repo, conf)
-	h := NewHandler(s, logger).Handler()
+	h := NewHandler(s).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -162,12 +160,11 @@ func TestHandler_MockGetShort(t *testing.T) {
 
 func TestHandler_MockMakeShort(t *testing.T) {
 	conf := config.NewConfig()
-	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	repo := mocks.NewMockRepository(ctrl)
 	s := service.NewService(repo, conf)
-	h := NewHandler(s, logger).Handler()
+	h := NewHandler(s).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -254,13 +251,12 @@ func TestHandler_MockMakeShort(t *testing.T) {
 
 func TestHandler_MockMakeShortJSON(t *testing.T) {
 	conf := config.NewConfig()
-	logger := logrus.New()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	repo := mocks.NewMockRepository(ctrl)
 
 	s := service.NewService(repo, conf)
-	h := NewHandler(s, logger).Handler()
+	h := NewHandler(s).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()

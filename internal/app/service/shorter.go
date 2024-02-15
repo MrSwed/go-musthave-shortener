@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
@@ -11,12 +12,12 @@ import (
 )
 
 type Shorter interface {
-	NewShort(url string) (string, error)
-	GetFromShort(k string) (string, error)
+	NewShort(ctx context.Context, url string) (string, error)
+	GetFromShort(ctx context.Context, k string) (string, error)
 	CheckDB() error
-	GetAll() (repository.Store, error)
+	GetAll(ctx context.Context) (repository.Store, error)
 	RestoreAll(repository.Store) error
-	NewShortBatch([]domain.ShortBatchInputItem) ([]domain.ShortBatchResultItem, error)
+	NewShortBatch(context.Context, []domain.ShortBatchInputItem) ([]domain.ShortBatchResultItem, error)
 }
 
 type ShorterService struct {
@@ -32,14 +33,14 @@ func (s ShorterService) fulNewShort(short string) string {
 	return s.c.Scheme + s.c.BaseURL + "/" + short
 
 }
-func (s ShorterService) NewShort(url string) (newURL string, err error) {
+func (s ShorterService) NewShort(ctx context.Context, url string) (newURL string, err error) {
 	var newShort string
-	if newShort, err = s.r.GetFromURL(url); err != nil {
+	if newShort, err = s.r.GetFromURL(ctx, url); err != nil {
 		return
 	}
 	if newShort != "" {
 		err = myErr.ErrAlreadyExist
-	} else if newShort, err = s.r.NewShort(url); err != nil {
+	} else if newShort, err = s.r.NewShort(ctx, url); err != nil {
 		return
 	}
 
@@ -47,8 +48,8 @@ func (s ShorterService) NewShort(url string) (newURL string, err error) {
 	return
 }
 
-func (s ShorterService) GetFromShort(k string) (v string, err error) {
-	v, err = s.r.GetFromShort(k)
+func (s ShorterService) GetFromShort(ctx context.Context, k string) (v string, err error) {
+	v, err = s.r.GetFromShort(ctx, k)
 	return
 }
 
@@ -62,19 +63,19 @@ func (s ShorterService) CheckDB() (err error) {
 	return fmt.Errorf("no DB connected")
 }
 
-func (s ShorterService) GetAll() (repository.Store, error) {
-	return s.r.GetAll()
+func (s ShorterService) GetAll(ctx context.Context) (repository.Store, error) {
+	return s.r.GetAll(ctx)
 }
 
 func (s ShorterService) RestoreAll(data repository.Store) error {
 	return s.r.RestoreAll(data)
 }
 
-func (s ShorterService) NewShortBatch(input []domain.ShortBatchInputItem) (out []domain.ShortBatchResultItem, err error) {
+func (s ShorterService) NewShortBatch(ctx context.Context, input []domain.ShortBatchInputItem) (out []domain.ShortBatchResultItem, err error) {
 	validate := validator.New()
 	if err = validate.Struct(domain.ShortBatchInput{List: input}); err != nil {
 		return
 	}
 
-	return s.r.NewShortBatch(input, s.c.Scheme+s.c.BaseURL+"/")
+	return s.r.NewShortBatch(ctx, input, s.c.Scheme+s.c.BaseURL+"/")
 }

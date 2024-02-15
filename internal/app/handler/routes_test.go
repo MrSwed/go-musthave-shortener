@@ -4,6 +4,7 @@ package handler
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
@@ -63,9 +64,9 @@ func TestHandler_GetShort(t *testing.T) {
 	testURL1 := "https://practicum.yandex.ru/"
 	testURL2 := "https://practicum2.yandex.ru/"
 	localURL := "http://" + baseURL + "/"
-
-	testShort1, _ := s.NewShort(testURL1)
-	testShort2, _ := s.NewShort(testURL2)
+	ctx := context.TODO()
+	testShort1, _ := s.NewShort(ctx, testURL1)
+	testShort2, _ := s.NewShort(ctx, testURL2)
 	testShort1 = strings.ReplaceAll(testShort1, localURL, "")
 	testShort2 = strings.ReplaceAll(testShort2, localURL, "")
 	type want struct {
@@ -193,7 +194,8 @@ func TestHandler_MakeShort(t *testing.T) {
 	// save some values
 	testURL := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
 	testURLExist := "https://practicum.yandex.ru/?exist"
-	_, _ = s.NewShort(testURLExist)
+	ctx := context.TODO()
+	_, _ = s.NewShort(ctx, testURLExist)
 
 	type want struct {
 		code            int
@@ -292,7 +294,8 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 	testURL2 := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
 	testURL3 := "https://practicum.yandex.ru/?rand_Hash" + helper.NewRandShorter().RandStringBytes().String()
 	testURLExist := "https://practicum.yandex.ru/?exist"
-	_, _ = s.NewShort(testURLExist)
+	ctx := context.TODO()
+	_, _ = s.NewShort(ctx, testURLExist)
 
 	type want struct {
 		code            int

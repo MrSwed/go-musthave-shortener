@@ -41,9 +41,9 @@ func TestHandler_MockGetShort(t *testing.T) {
 	testShort1 := helper.NewRandShorter().RandStringBytes().String()
 	testShort2 := helper.NewRandShorter().RandStringBytes().String()
 
-	_ = repo.EXPECT().GetFromShort(testShort1).Return(testURL1, nil).AnyTimes()
-	_ = repo.EXPECT().GetFromShort(testShort2).Return(testURL2, nil).AnyTimes()
-	_ = repo.EXPECT().GetFromShort(gomock.Any()).Return("", myErr.ErrNotExist).AnyTimes()
+	_ = repo.EXPECT().GetFromShort(gomock.Any(), testShort1).Return(testURL1, nil).AnyTimes()
+	_ = repo.EXPECT().GetFromShort(gomock.Any(), testShort2).Return(testURL2, nil).AnyTimes()
+	_ = repo.EXPECT().GetFromShort(gomock.Any(), gomock.Any()).Return("", myErr.ErrNotExist).AnyTimes()
 
 	type want struct {
 		code            int
@@ -174,8 +174,8 @@ func TestHandler_MockMakeShort(t *testing.T) {
 	testURL := "https://practicum.yandex.ru/"
 	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
-	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
-	_ = repo.EXPECT().GetFromURL(testURL).Return("", nil).AnyTimes()
+	_ = repo.EXPECT().NewShort(gomock.Any(), testURL).Return(testShortURL, nil).AnyTimes()
+	_ = repo.EXPECT().GetFromURL(gomock.Any(), testURL).Return("", nil).AnyTimes()
 
 	type want struct {
 		code            int
@@ -267,9 +267,9 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 
 	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
-	_ = repo.EXPECT().NewShort(testURL).Return(testShortURL, nil).AnyTimes()
-	_ = repo.EXPECT().NewShort(gomock.Any()).Return(helper.NewRandShorter().RandStringBytes().String(), nil).AnyTimes()
-	_ = repo.EXPECT().GetFromURL(gomock.Any()).Return("", nil).AnyTimes()
+	_ = repo.EXPECT().NewShort(gomock.Any(), testURL).Return(testShortURL, nil).AnyTimes()
+	_ = repo.EXPECT().NewShort(gomock.Any(), gomock.Any()).Return(helper.NewRandShorter().RandStringBytes().String(), nil).AnyTimes()
+	_ = repo.EXPECT().GetFromURL(gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
 	type want struct {
 		code            int

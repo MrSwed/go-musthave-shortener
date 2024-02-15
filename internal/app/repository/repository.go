@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	"github.com/jmoiron/sqlx"
 )
@@ -8,12 +9,12 @@ import (
 //go:generate  mockgen -destination=../mock/repository/repository.go -package=mock "github.com/MrSwed/go-musthave-shortener/internal/app/repository" Repository
 
 type DataStorage interface {
-	GetFromShort(k string) (string, error)
-	GetFromURL(url string) (string, error)
-	NewShort(url string) (newURL string, err error)
-	GetAll() (Store, error)
+	GetFromShort(ctx context.Context, k string) (string, error)
+	GetFromURL(ctx context.Context, url string) (string, error)
+	NewShort(ctx context.Context, url string) (newURL string, err error)
+	GetAll(ctx context.Context) (Store, error)
 	RestoreAll(Store) error
-	NewShortBatch([]domain.ShortBatchInputItem, string) ([]domain.ShortBatchResultItem, error)
+	NewShortBatch(context.Context, []domain.ShortBatchInputItem, string) ([]domain.ShortBatchResultItem, error)
 }
 
 type Repository interface {

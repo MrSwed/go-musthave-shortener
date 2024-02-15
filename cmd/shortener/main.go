@@ -92,7 +92,7 @@ func runServer(ctx context.Context) {
 					close(lockDBCLose)
 				}
 			}()
-			if store, err := s.GetAll(); err != nil {
+			if store, err := s.GetAll(ctx); err != nil {
 				logrus.WithError(err).Error("Can get data for save to disk")
 				return err
 			} else if err := r.FileStorage.Save(store); err != nil {

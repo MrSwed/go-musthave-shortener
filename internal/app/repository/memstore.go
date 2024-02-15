@@ -1,11 +1,13 @@
 package repository
 
 import (
-	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	"context"
+	"errors"
 	"sync"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/errors"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 
 	"github.com/google/uuid"
@@ -22,7 +24,7 @@ func NewMemRepository() *MemStorageRepository {
 	}
 }
 
-func (r *MemStorageRepository) NewShort(url string) (short string, err error) {
+func (r *MemStorageRepository) NewShort(ctx context.Context, url string) (short string, err error) {
 	r.mg.Lock()
 	defer r.mg.Unlock()
 	for {
@@ -35,26 +37,32 @@ func (r *MemStorageRepository) NewShort(url string) (short string, err error) {
 			short = newShort.String()
 			return
 		}
+		select {
+		case <-ctx.Done():
+			err = errors.New("timeout")
+			return
+		default:
+		}
 	}
 }
 
-func (r *MemStorageRepository) GetFromShort(k string) (v string, err error) {
+func (r *MemStorageRepository) GetFromShort(ctx context.Context, k string) (v string, err error) {
 	if len([]byte(k)) != len(config.ShortKey{}) {
-		err = errors.ErrNotExist
+		err = myErr.ErrNotExist
 		return
 	}
 	sk := config.ShortKey([]byte(k))
 	r.mg.RLock()
 	defer r.mg.RUnlock()
 	if item, ok := r.Data[sk]; !ok {
-		err = errors.ErrNotExist
+		err = myErr.ErrNotExist
 	} else {
 		v = item.url
 	}
 	return
 }
 
-func (r *MemStorageRepository) GetFromURL(url string) (v string, err error) {
+func (r *MemStorageRepository) GetFromURL(ctx context.Context, url string) (v string, err error) {
 	r.mg.Lock()
 	defer r.mg.Unlock()
 	for sk, item := range r.Data {
@@ -66,7 +74,7 @@ func (r *MemStorageRepository) GetFromURL(url string) (v string, err error) {
 	return
 }
 
-func (r *MemStorageRepository) GetAll() (Store, error) {
+func (r *MemStorageRepository) GetAll(ctx context.Context) (Store, error) {
 	return r.Data, nil
 }
 
@@ -75,14 +83,14 @@ func (r *MemStorageRepository) RestoreAll(data Store) error {
 	return nil
 }
 
-func (r *MemStorageRepository) NewShortBatch(input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
+func (r *MemStorageRepository) NewShortBatch(ctx context.Context, input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
 	for _, i := range input {
 		var short string
-		if short, err = r.GetFromURL(i.OriginalURL); err != nil {
+		if short, err = r.GetFromURL(ctx, i.OriginalURL); err != nil {
 			return
 		}
 		if short == "" {
-			if short, err = r.NewShort(i.OriginalURL); err != nil {
+			if short, err = r.NewShort(ctx, i.OriginalURL); err != nil {
 				return
 			}
 		}

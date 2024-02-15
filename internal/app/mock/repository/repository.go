@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	domain "github.com/MrSwed/go-musthave-shortener/internal/app/domain"
@@ -36,78 +37,78 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // GetAll mocks base method.
-func (m *MockRepository) GetAll() (repository.Store, error) {
+func (m *MockRepository) GetAll(arg0 context.Context) (repository.Store, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll")
+	ret := m.ctrl.Call(m, "GetAll", arg0)
 	ret0, _ := ret[0].(repository.Store)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAll indicates an expected call of GetAll.
-func (mr *MockRepositoryMockRecorder) GetAll() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockRepository)(nil).GetAll))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockRepository)(nil).GetAll), arg0)
 }
 
 // GetFromShort mocks base method.
-func (m *MockRepository) GetFromShort(arg0 string) (string, error) {
+func (m *MockRepository) GetFromShort(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFromShort", arg0)
+	ret := m.ctrl.Call(m, "GetFromShort", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFromShort indicates an expected call of GetFromShort.
-func (mr *MockRepositoryMockRecorder) GetFromShort(arg0 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetFromShort(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromShort", reflect.TypeOf((*MockRepository)(nil).GetFromShort), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromShort", reflect.TypeOf((*MockRepository)(nil).GetFromShort), arg0, arg1)
 }
 
 // GetFromURL mocks base method.
-func (m *MockRepository) GetFromURL(arg0 string) (string, error) {
+func (m *MockRepository) GetFromURL(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFromURL", arg0)
+	ret := m.ctrl.Call(m, "GetFromURL", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFromURL indicates an expected call of GetFromURL.
-func (mr *MockRepositoryMockRecorder) GetFromURL(arg0 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetFromURL(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromURL", reflect.TypeOf((*MockRepository)(nil).GetFromURL), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromURL", reflect.TypeOf((*MockRepository)(nil).GetFromURL), arg0, arg1)
 }
 
 // NewShort mocks base method.
-func (m *MockRepository) NewShort(arg0 string) (string, error) {
+func (m *MockRepository) NewShort(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewShort", arg0)
+	ret := m.ctrl.Call(m, "NewShort", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewShort indicates an expected call of NewShort.
-func (mr *MockRepositoryMockRecorder) NewShort(arg0 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) NewShort(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShort", reflect.TypeOf((*MockRepository)(nil).NewShort), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShort", reflect.TypeOf((*MockRepository)(nil).NewShort), arg0, arg1)
 }
 
 // NewShortBatch mocks base method.
-func (m *MockRepository) NewShortBatch(arg0 []domain.ShortBatchInputItem, arg1 string) ([]domain.ShortBatchResultItem, error) {
+func (m *MockRepository) NewShortBatch(arg0 context.Context, arg1 []domain.ShortBatchInputItem, arg2 string) ([]domain.ShortBatchResultItem, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewShortBatch", arg0, arg1)
+	ret := m.ctrl.Call(m, "NewShortBatch", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]domain.ShortBatchResultItem)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewShortBatch indicates an expected call of NewShortBatch.
-func (mr *MockRepositoryMockRecorder) NewShortBatch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) NewShortBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShortBatch", reflect.TypeOf((*MockRepository)(nil).NewShortBatch), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShortBatch", reflect.TypeOf((*MockRepository)(nil).NewShortBatch), arg0, arg1, arg2)
 }
 
 // Restore mocks base method.

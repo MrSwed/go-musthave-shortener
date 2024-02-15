@@ -25,7 +25,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 			return
 		}
 		var html string
-		if html, err = h.s.NewShort(string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
+		if html, err = h.s.NewShort(c, string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.WithField("Error", err).Error("Error create new short")
 		}
@@ -55,7 +55,7 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		if result.Result, err = h.s.NewShort(url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
+		if result.Result, err = h.s.NewShort(c, url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.WithField("Error", err).Error("Error create new short")
 		}
@@ -85,7 +85,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 			return
 		}
 
-		if result, err = h.s.NewShortBatch(input); err != nil {
+		if result, err = h.s.NewShortBatch(c, input); err != nil {
 			if errors.As(err, &validator.ValidationErrors{}) {
 				c.String(http.StatusBadRequest, err.Error())
 				return
@@ -102,7 +102,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 func (h *Handler) GetShort() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		if newURL, err := h.s.GetFromShort(id); err != nil {
+		if newURL, err := h.s.GetFromShort(c, id); err != nil {
 			if errors.Is(err, myErr.ErrNotExist) {
 				c.AbortWithStatus(http.StatusBadRequest)
 			} else {

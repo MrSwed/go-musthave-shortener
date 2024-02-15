@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"time"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 
@@ -25,7 +28,9 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 			return
 		}
 		var html string
-		if html, err = h.s.NewShort(c, string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		if html, err = h.s.NewShort(ctx, string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.WithField("Error", err).Error("Error create new short")
 		}
@@ -55,7 +60,9 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		if result.Result, err = h.s.NewShort(c, url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		if result.Result, err = h.s.NewShort(ctx, url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.WithField("Error", err).Error("Error create new short")
 		}
@@ -84,8 +91,9 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-
-		if result, err = h.s.NewShortBatch(c, input); err != nil {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		if result, err = h.s.NewShortBatch(ctx, input); err != nil {
 			if errors.As(err, &validator.ValidationErrors{}) {
 				c.String(http.StatusBadRequest, err.Error())
 				return
@@ -101,8 +109,9 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 
 func (h *Handler) GetShort() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		if newURL, err := h.s.GetFromShort(c, id); err != nil {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		if newURL, err := h.s.GetFromShort(ctx, c.Param("id")); err != nil {
 			if errors.Is(err, myErr.ErrNotExist) {
 				c.AbortWithStatus(http.StatusBadRequest)
 			} else {

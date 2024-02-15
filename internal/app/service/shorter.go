@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
-	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
-	"github.com/go-playground/validator/v10"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type Shorter interface {

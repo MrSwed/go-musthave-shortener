@@ -1,7 +1,8 @@
 package constant
 
 const (
-	ServerShutdownTimeout = 30
+	ServerShutdownTimeout  = 30
+	ServerOperationTimeout = 30
 
 	Scheme          = "http://"
 	ServerAddress   = "localhost:8080"

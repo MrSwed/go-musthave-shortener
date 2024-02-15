@@ -61,7 +61,7 @@ func (r *DBStorageRepo) NewShort(ctx context.Context, url string) (short string,
 		}
 		select {
 		case <-ctx.Done():
-			err = errors.New("timeout")
+			err = ctx.Err()
 			return
 		default:
 		}

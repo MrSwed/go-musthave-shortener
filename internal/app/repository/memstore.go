@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
@@ -39,7 +38,7 @@ func (r *MemStorageRepository) NewShort(ctx context.Context, url string) (short 
 		}
 		select {
 		case <-ctx.Done():
-			err = errors.New("timeout")
+			err = ctx.Err()
 			return
 		default:
 		}

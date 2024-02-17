@@ -131,7 +131,6 @@ func TestHandler_MockGetShort(t *testing.T) {
 			req, err := http.NewRequest(test.args.method, ts.URL+test.args.path, nil)
 			require.NoError(t, err)
 
-			defer req.Context()
 			res, err := http.DefaultTransport.RoundTrip(req)
 			//res, err := http.DefaultClient.Do(req)
 
@@ -221,8 +220,6 @@ func TestHandler_MockMakeShort(t *testing.T) {
 
 			req, err := http.NewRequest(test.args.method, ts.URL+test.args.path, strings.NewReader(test.args.data))
 			require.NoError(t, err)
-
-			defer req.Context()
 
 			res, err := http.DefaultClient.Do(req)
 
@@ -422,7 +419,6 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 
 			req, err := http.NewRequest(test.args.method, ts.URL+constant.APIRoute+constant.ShortenRoute, b)
 			require.NoError(t, err)
-			defer req.Context()
 
 			for k, v := range test.args.headers {
 				req.Header.Add(k, v)

@@ -155,7 +155,6 @@ func TestHandler_GetShort(t *testing.T) {
 			req, err := http.NewRequest(test.args.method, ts.URL+test.args.path, nil)
 			require.NoError(t, err)
 
-			defer req.Context()
 			res, err := http.DefaultTransport.RoundTrip(req)
 			//res, err := http.DefaultClient.Do(req)
 
@@ -253,8 +252,6 @@ func TestHandler_MakeShort(t *testing.T) {
 
 			req, err := http.NewRequest(test.args.method, ts.URL+test.args.path, strings.NewReader(test.args.data))
 			require.NoError(t, err)
-
-			defer req.Context()
 
 			res, err := http.DefaultClient.Do(req)
 
@@ -409,7 +406,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 					"url": testURL2,
 				},
 				headers: map[string]string{
-					"Accept-Encoding": "gzip",
+					"Content-Encoding": "gzip",
 				},
 			},
 			want: want{
@@ -462,7 +459,6 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 
 			req, err := http.NewRequest(test.args.method, ts.URL+constant.APIRoute+constant.ShortenRoute, b)
 			require.NoError(t, err)
-			defer req.Context()
 
 			for k, v := range test.args.headers {
 				req.Header.Add(k, v)
@@ -609,7 +605,6 @@ func TestHandler_MakeShortBatch(t *testing.T) {
 
 			req, err := http.NewRequest(test.args.method, ts.URL+constant.APIRoute+constant.ShortenRoute+constant.BatchRoute, b)
 			require.NoError(t, err)
-			defer req.Context()
 
 			for k, v := range test.args.headers {
 				req.Header.Add(k, v)

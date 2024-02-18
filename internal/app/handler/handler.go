@@ -1,35 +1,44 @@
 package handler
 
 import (
-	"log"
+	"compress/gzip"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"net/http"
 
+	"github.com/MrSwed/go-musthave-shortener/internal/app/logger"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/middleware"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
+
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
-	s service.Service
-	r *gin.Engine
+	s   service.Service
+	r   *gin.Engine
+	log *logrus.Logger
 }
 
 func NewHandler(s service.Service) *Handler { return &Handler{s: s} }
 
-func (h *Handler) InitRoutes() *Handler {
+func (h *Handler) Handler() http.Handler {
 	h.r = gin.New()
+	h.r.Use(logger.Logger())
+	h.r.Use(middleware.Compress(gzip.DefaultCompression, h.log))
+	h.r.Use(middleware.Decompress(h.log))
 
 	h.r.NoRoute(func(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 	})
 	rootRoute := h.r.Group("/")
-	rootRoute.POST("/", h.MakeShort())
+	rootRoute.POST("", h.MakeShort())
+	rootRoute.GET("/ping", h.GetDBPing())
 	rootRoute.GET("/:id", h.GetShort())
-	return h
-}
 
-func (h *Handler) RunServer(addr string) {
-	if h.r == nil {
-		h.InitRoutes()
-	}
-	log.Fatal(http.ListenAndServe(addr, h.r))
+	apiRoute := rootRoute.Group(constant.APIRoute)
+	shortAPIRoute := apiRoute.Group(constant.ShortenRoute)
+	shortAPIRoute.POST("", h.MakeShortJSON())
+	shortAPIRoute.POST(constant.BatchRoute, h.MakeShortBatch())
+
+	return h.r
 }

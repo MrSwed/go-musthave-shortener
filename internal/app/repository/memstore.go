@@ -23,6 +23,10 @@ func NewMemRepository() *MemStorageRepository {
 	}
 }
 
+func (r *MemStorageRepository) Ping(ctx context.Context) (err error) {
+	return
+}
+
 func (r *MemStorageRepository) NewShort(ctx context.Context, url string) (short string, err error) {
 	r.mg.Lock()
 	defer r.mg.Unlock()

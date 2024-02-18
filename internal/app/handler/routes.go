@@ -128,7 +128,10 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 
 func (h *Handler) GetDBPing() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		if err := h.s.CheckDB(); err != nil {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+
+		if err := h.s.CheckDB(ctx); err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			h.log.Error("Error ", err)
 		} else {

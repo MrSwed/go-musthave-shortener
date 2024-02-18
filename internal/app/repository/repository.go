@@ -15,6 +15,7 @@ type DataStorage interface {
 	GetAll(ctx context.Context) (Store, error)
 	RestoreAll(Store) error
 	NewShortBatch(context.Context, []domain.ShortBatchInputItem, string) ([]domain.ShortBatchResultItem, error)
+	Ping(ctx context.Context) error
 }
 
 type Repository interface {

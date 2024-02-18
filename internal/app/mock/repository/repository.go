@@ -111,6 +111,20 @@ func (mr *MockRepositoryMockRecorder) NewShortBatch(arg0, arg1, arg2 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShortBatch", reflect.TypeOf((*MockRepository)(nil).NewShortBatch), arg0, arg1, arg2)
 }
 
+// Ping mocks base method.
+func (m *MockRepository) Ping(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockRepositoryMockRecorder) Ping(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockRepository)(nil).Ping), arg0)
+}
+
 // Restore mocks base method.
 func (m *MockRepository) Restore() (repository.Store, error) {
 	m.ctrl.T.Helper()

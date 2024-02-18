@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
@@ -15,7 +14,7 @@ import (
 type Shorter interface {
 	NewShort(ctx context.Context, url string) (string, error)
 	GetFromShort(ctx context.Context, k string) (string, error)
-	CheckDB() error
+	CheckDB(ctx context.Context) error
 	GetAll(ctx context.Context) (repository.Store, error)
 	RestoreAll(repository.Store) error
 	NewShortBatch(context.Context, []domain.ShortBatchInputItem) ([]domain.ShortBatchResultItem, error)
@@ -54,14 +53,9 @@ func (s ShorterService) GetFromShort(ctx context.Context, k string) (v string, e
 	return
 }
 
-func (s ShorterService) CheckDB() (err error) {
-	if rs, ok := s.r.(repository.Storage); ok {
-		if rsDB, ok := rs.DataStorage.(repository.DBStorage); ok {
-			err = rsDB.Ping()
-			return
-		}
-	}
-	return fmt.Errorf("no DB connected")
+func (s ShorterService) CheckDB(ctx context.Context) (err error) {
+	err = s.r.Ping(ctx)
+	return
 }
 
 func (s ShorterService) GetAll(ctx context.Context) (repository.Store, error) {

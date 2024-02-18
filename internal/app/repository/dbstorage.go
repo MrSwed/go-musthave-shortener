@@ -22,10 +22,6 @@ type DBStorageItem struct {
 	URL   string `db:"url"`
 }
 
-type DBStorage interface {
-	Ping() error
-}
-
 type DBStorageRepo struct {
 	db *sqlx.DB
 }
@@ -36,11 +32,11 @@ func NewDBStorageRepository(db *sqlx.DB) *DBStorageRepo {
 	}
 }
 
-func (r *DBStorageRepo) Ping() error {
+func (r *DBStorageRepo) Ping(ctx context.Context) error {
 	if r.db == nil {
 		return fmt.Errorf("no DB connected")
 	}
-	return r.db.Ping()
+	return r.db.PingContext(ctx)
 }
 
 func (r *DBStorageRepo) saveNew(item DBStorageItem) (err error) {

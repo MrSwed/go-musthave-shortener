@@ -27,20 +27,20 @@ func (r *MemStorageRepository) NewShort(ctx context.Context, url string) (short 
 	r.mg.Lock()
 	defer r.mg.Unlock()
 	for {
-		newShort := helper.NewRandShorter().RandStringBytes()
-		if _, exist := r.Data[newShort]; !exist {
-			r.Data[newShort] = storeItem{
-				uuid: uuid.New().String(),
-				url:  url,
-			}
-			short = newShort.String()
-			return
-		}
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
 			return
 		default:
+			newShort := helper.NewRandShorter().RandStringBytes()
+			if _, exist := r.Data[newShort]; !exist {
+				r.Data[newShort] = storeItem{
+					uuid: uuid.New().String(),
+					url:  url,
+				}
+				short = newShort.String()
+				return
+			}
 		}
 	}
 }

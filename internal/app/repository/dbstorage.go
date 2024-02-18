@@ -51,22 +51,21 @@ func (r *DBStorageRepo) saveNew(item DBStorageItem) (err error) {
 
 func (r *DBStorageRepo) NewShort(ctx context.Context, url string) (short string, err error) {
 	for {
-		newShort := helper.NewRandShorter().RandStringBytes().String()
-		if errS := r.saveNew(DBStorageItem{Short: newShort, URL: url}); errS == nil {
-			short = newShort
-			break
-		} else if errP, ok := errS.(*pgconn.PgError); !ok || errP.Code != pgerrcode.UniqueViolation {
-			err = errS
-			break
-		}
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
 			return
 		default:
+			newShort := helper.NewRandShorter().RandStringBytes().String()
+			if errS := r.saveNew(DBStorageItem{Short: newShort, URL: url}); errS == nil {
+				short = newShort
+				return
+			} else if errP, ok := errS.(*pgconn.PgError); !ok || errP.Code != pgerrcode.UniqueViolation {
+				err = errS
+				return
+			}
 		}
 	}
-	return
 }
 
 func (r *DBStorageRepo) GetFromShort(ctx context.Context, k string) (v string, err error) {

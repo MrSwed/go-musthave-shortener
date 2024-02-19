@@ -178,11 +178,51 @@ func (r *DBStorageRepo) GetAll(ctx context.Context) (data Store, err error) {
 }
 
 func (r *DBStorageRepo) RestoreAll(data Store) (err error) {
+	var tx *sqlx.Tx
+
+	tx, err = r.db.Beginx()
+	if err != nil {
+		return
+	}
+	defer func() {
+		rErr := tx.Rollback()
+		if rErr != nil && !errors.Is(rErr, sql.ErrTxDone) {
+			err = errors.Join(err, rErr)
+		}
+	}()
+
 	for short, item := range data {
-		if err = r.saveNew(context.TODO(), newDBStorageItem(context.Background(), short.String(), item.url, item.uuid, item.userID)); err != nil {
-			return err
+		var (
+			sqlStr string
+			args   []interface{}
+		)
+
+		if sqlStr, args, err = sq.
+			Insert(constant.DBTableName).
+			Columns("uuid", "short", "url", "user_id").
+			Values(item.uuid, short, item.url, item.userID).
+			ToSql(); err != nil {
+			return
+		}
+		if _, err = tx.Exec(sqlStr, args...); err != nil {
+			return
+		}
+		if item.userID != "" {
+			if sqlStr, args, err = sq.
+				Insert(constant.DBUsersTableName).
+				Columns("id").
+				Values(item.userID).
+				Suffix("ON CONFLICT (id) DO nothing").
+				ToSql(); err != nil {
+				return
+			}
+			if _, err = tx.Exec(sqlStr, args...); err != nil {
+				return
+			}
 		}
 	}
+
+	err = errors.Join(err, tx.Commit())
 	return
 }
 

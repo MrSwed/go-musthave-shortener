@@ -91,6 +91,9 @@ func (r *MemStorageRepository) GetAll(ctx context.Context) (Store, error) {
 
 func (r *MemStorageRepository) RestoreAll(data Store) error {
 	r.Data = data
+	for _, v := range data {
+		r.Users[v.userID] = userData{CreatedAt: time.Now()}
+	}
 	return nil
 }
 

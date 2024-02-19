@@ -10,13 +10,11 @@ import (
 	"github.com/MrSwed/go-musthave-shortener/internal/app/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
-	s   service.Service
-	r   *gin.Engine
-	log *logrus.Logger
+	s service.Service
+	r *gin.Engine
 }
 
 func NewHandler(s service.Service) *Handler { return &Handler{s: s} }
@@ -24,8 +22,8 @@ func NewHandler(s service.Service) *Handler { return &Handler{s: s} }
 func (h *Handler) Handler() http.Handler {
 	h.r = gin.New()
 	h.r.Use(logger.Logger())
-	h.r.Use(middleware.Compress(gzip.DefaultCompression, h.log))
-	h.r.Use(middleware.Decompress(h.log))
+	h.r.Use(middleware.Compress(gzip.DefaultCompression))
+	h.r.Use(middleware.Decompress())
 
 	h.r.NoRoute(func(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)

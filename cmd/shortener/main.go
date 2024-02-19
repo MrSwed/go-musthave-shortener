@@ -56,7 +56,7 @@ func runServer(ctx context.Context) {
 		case errM == nil:
 			logrus.Info("DB migrate: new applied ", versions)
 		default:
-			logrus.WithError(err).Fatal("DB migrate: ", versions)
+			logrus.WithError(errM).Fatal("DB migrate: ", versions)
 		}
 		isNewDB = versions[0] == 0
 	}

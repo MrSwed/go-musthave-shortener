@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
@@ -24,7 +25,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 		}
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error get body")
+			logrus.WithField("Error", err).Error("Error get body")
 			return
 		}
 		var html string
@@ -32,7 +33,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 		defer cancel()
 		if html, err = h.s.NewShort(ctx, string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error create new short")
+			logrus.WithField("Error", err).Error("Error create new short")
 		}
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		status := http.StatusCreated
@@ -64,7 +65,7 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 		defer cancel()
 		if result.Result, err = h.s.NewShort(ctx, url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error create new short")
+			logrus.WithField("Error", err).Error("Error create new short")
 		}
 		status := http.StatusCreated
 		if errors.Is(err, myErr.ErrAlreadyExist) {
@@ -99,7 +100,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 				return
 			} else {
 				c.AbortWithStatus(http.StatusInternalServerError)
-				h.log.WithField("Error", err).Error("Error create new batch shorts")
+				logrus.WithField("Error", err).Error("Error create new batch shorts")
 				return
 			}
 		}
@@ -116,7 +117,7 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 				c.AbortWithStatus(http.StatusBadRequest)
 			} else {
 				c.AbortWithStatus(http.StatusInternalServerError)
-				h.log.WithField("Error", err).Error("Error get new short")
+				logrus.WithField("Error", err).Error("Error get new short")
 			}
 			return
 		} else {
@@ -133,7 +134,7 @@ func (h *Handler) GetDBPing() func(c *gin.Context) {
 
 		if err := h.s.CheckDB(ctx); err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.Error("Error ", err)
+			logrus.Error("Error ", err)
 		} else {
 			c.String(http.StatusOK, "Status: ok")
 		}

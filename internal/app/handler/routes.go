@@ -16,7 +16,7 @@ import (
 	"github.com/pquerna/ffjson/ffjson"
 )
 
-func (h *Handler) MakeShort() func(c *gin.Context) {
+func (h *Handler) MakeShort() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		url, err := c.GetRawData()
 		if len(url) == 0 {
@@ -44,7 +44,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) MakeShortJSON() func(c *gin.Context) {
+func (h *Handler) MakeShortJSON() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			url    domain.CreateURL
@@ -75,7 +75,7 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) MakeShortBatch() func(c *gin.Context) {
+func (h *Handler) MakeShortBatch() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			input  []domain.ShortBatchInputItem
@@ -108,7 +108,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) GetShort() func(c *gin.Context) {
+func (h *Handler) GetShort() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
 		defer cancel()
@@ -127,7 +127,7 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) GetDBPing() func(c *gin.Context) {
+func (h *Handler) GetDBPing() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
 		defer cancel()

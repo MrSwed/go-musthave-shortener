@@ -18,6 +18,8 @@ type Shorter interface {
 	GetAll(ctx context.Context) (repository.Store, error)
 	RestoreAll(repository.Store) error
 	NewShortBatch(context.Context, []domain.ShortBatchInputItem) ([]domain.ShortBatchResultItem, error)
+	GetUser(ctx context.Context, id string) (domain.UserInfo, error)
+	NewUser(ctx context.Context) (string, error)
 }
 
 type ShorterService struct {
@@ -73,4 +75,12 @@ func (s ShorterService) NewShortBatch(ctx context.Context, input []domain.ShortB
 	}
 
 	return s.r.NewShortBatch(ctx, input, s.c.Scheme+s.c.BaseURL+"/")
+}
+
+func (s ShorterService) GetUser(ctx context.Context, id string) (user domain.UserInfo, err error) {
+	return s.r.GetUser(ctx, id)
+}
+
+func (s ShorterService) NewUser(ctx context.Context) (id string, err error) {
+	return s.r.NewUser(ctx)
 }

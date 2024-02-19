@@ -63,7 +63,7 @@ func runServer(ctx context.Context) {
 
 	r := repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
 	s := service.NewService(r, conf)
-	h := handler.NewHandler(s)
+	h := handler.NewHandler(s, &conf.WEB)
 
 	if conf.FileStoragePath != "" && isNewDB {
 		data, err := r.Restore()

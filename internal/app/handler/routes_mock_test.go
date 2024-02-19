@@ -29,7 +29,7 @@ func TestHandler_MockGetShort(t *testing.T) {
 	repo := mocks.NewMockRepository(ctrl)
 	conf := config.NewConfig()
 	s := service.NewService(repo, conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.WEB).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -164,7 +164,7 @@ func TestHandler_MockMakeShort(t *testing.T) {
 	defer ctrl.Finish()
 	repo := mocks.NewMockRepository(ctrl)
 	s := service.NewService(repo, conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.WEB).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -254,7 +254,7 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 	repo := mocks.NewMockRepository(ctrl)
 
 	s := service.NewService(repo, conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.WEB).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()

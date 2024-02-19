@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	"io"
 	"os"
 	"sync"
-
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 )
 
 type FileStorage interface {
@@ -20,6 +19,7 @@ type FileStorageItem struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	UserID      string `json:"user_id,omitempty"`
 }
 
 type FileStorageRepository struct {
@@ -50,6 +50,7 @@ func (f *FileStorageRepository) Save(data Store) error {
 			UUID:        item.uuid,
 			ShortURL:    short.String(),
 			OriginalURL: item.url,
+			UserID:      item.userID,
 		}
 		if err = s.WriteData(&fItem); err != nil {
 			return err
@@ -81,9 +82,10 @@ func (f *FileStorageRepository) Restore() (data Store, err error) {
 			}
 			return
 		}
-		data[config.ShortKey([]byte(item.ShortURL))] = storeItem{
-			uuid: item.UUID,
-			url:  item.OriginalURL,
+		data[domain.ShortKey([]byte(item.ShortURL))] = storeItem{
+			uuid:   item.UUID,
+			url:    item.OriginalURL,
+			userID: item.UserID,
 		}
 	}
 	err = r.Close()

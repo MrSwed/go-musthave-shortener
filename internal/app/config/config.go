@@ -1,17 +1,15 @@
 package config
 
 import (
+	"crypto/aes"
+	"crypto/sha256"
 	"flag"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
+	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
 )
-
-type ShortKey [constant.ShortLen]byte
-
-func (s ShortKey) String() string {
-	return string(s[:])
-}
 
 type Config struct {
 	ServerAddress   string
@@ -19,14 +17,27 @@ type Config struct {
 	FileStoragePath string
 	DatabaseDSN     string
 	Scheme          string
+	WEB
+}
+
+type WEB struct {
+	Key []byte
 }
 
 func NewConfig() *Config {
+	secretKey, err := helper.GenerateRandom(aes.BlockSize * 2)
+	if err != nil {
+		logrus.Fatal("can't generate secret key")
+	}
+	key := sha256.Sum256(secretKey)
 	return &Config{
 		ServerAddress:   constant.ServerAddress,
 		BaseURL:         constant.BaseURL,
 		FileStoragePath: constant.FileStoragePath,
 		Scheme:          constant.Scheme,
+		WEB: WEB{
+			Key: key[:],
+		},
 	}
 }
 

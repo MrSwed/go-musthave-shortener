@@ -20,5 +20,9 @@ const (
 	ShortenRoute = "/shorten"
 	BatchRoute   = "/batch"
 
-	DBTableName = "shortener"
+	DBTableName      = "shortener"
+	DBUsersTableName = "users"
+
+	CookieAuthName       = "AuthShortener"
+	ContextUserValueName = "user"
 )

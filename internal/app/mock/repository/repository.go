@@ -81,6 +81,21 @@ func (mr *MockRepositoryMockRecorder) GetFromURL(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromURL", reflect.TypeOf((*MockRepository)(nil).GetFromURL), arg0, arg1)
 }
 
+// GetUser mocks base method.
+func (m *MockRepository) GetUser(arg0 context.Context, arg1 string) (domain.UserInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
+	ret0, _ := ret[0].(domain.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUser indicates an expected call of GetUser.
+func (mr *MockRepositoryMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockRepository)(nil).GetUser), arg0, arg1)
+}
+
 // NewShort mocks base method.
 func (m *MockRepository) NewShort(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
@@ -109,6 +124,21 @@ func (m *MockRepository) NewShortBatch(arg0 context.Context, arg1 []domain.Short
 func (mr *MockRepositoryMockRecorder) NewShortBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShortBatch", reflect.TypeOf((*MockRepository)(nil).NewShortBatch), arg0, arg1, arg2)
+}
+
+// NewUser mocks base method.
+func (m *MockRepository) NewUser(arg0 context.Context) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewUser", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewUser indicates an expected call of NewUser.
+func (mr *MockRepositoryMockRecorder) NewUser(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewUser", reflect.TypeOf((*MockRepository)(nil).NewUser), arg0)
 }
 
 // Ping mocks base method.

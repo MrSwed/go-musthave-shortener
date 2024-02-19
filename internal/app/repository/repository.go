@@ -18,6 +18,7 @@ type DataStorage interface {
 	Ping(ctx context.Context) error
 	GetUser(ctx context.Context, id string) (domain.UserInfo, error)
 	NewUser(ctx context.Context) (string, error)
+	GetAllByUser(ctx context.Context, userID, prefix string) ([]domain.StorageItem, error)
 }
 
 type Repository interface {

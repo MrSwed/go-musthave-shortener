@@ -140,3 +140,29 @@ func (h *Handler) GetDBPing() gin.HandlerFunc {
 		}
 	}
 }
+
+func (h *Handler) GetAllByUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		userID := ""
+		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+			userID = u
+		}
+		if userID == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		data, err := h.s.GetAllByUser(ctx, userID)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			logrus.Error("Error ", err)
+			return
+		}
+		status := http.StatusOK
+		if len(data) == 0 {
+			status = http.StatusNoContent
+		}
+		c.JSON(status, data)
+	}
+}

@@ -28,6 +28,11 @@ type ShortBatchResultItem struct {
 	ShortURL      string `json:"short_url"`
 }
 
+type StorageItem struct {
+	ShortURL    string `json:"short_url" db:"short"`
+	OriginalURL string `json:"original_url" db:"url"`
+}
+
 type UserInfo struct {
 	ID        string    `json:"id" db:"id"`
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`

@@ -47,6 +47,9 @@ func (h *Handler) Handler() http.Handler {
 	shortAPIRoute.POST("", h.MakeShortJSON())
 	shortAPIRoute.POST(constant.BatchRoute, h.MakeShortBatch())
 
+	userAPIRoute := apiRoute.Group(constant.UserRoute)
+	userAPIRoute.GET(constant.URLsRoute, h.GetAllByUser())
+
 	return h.r
 }
 

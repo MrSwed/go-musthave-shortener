@@ -20,6 +20,8 @@ const (
 	APIRoute     = "/api"
 	ShortenRoute = "/shorten"
 	BatchRoute   = "/batch"
+	UserRoute    = "/user"
+	URLsRoute    = "/urls"
 
 	DBTableName      = "shortener"
 	DBUsersTableName = "users"

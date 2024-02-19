@@ -51,6 +51,21 @@ func (mr *MockRepositoryMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockRepository)(nil).GetAll), arg0)
 }
 
+// GetAllByUser mocks base method.
+func (m *MockRepository) GetAllByUser(arg0 context.Context, arg1, arg2 string) ([]domain.StorageItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllByUser", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]domain.StorageItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllByUser indicates an expected call of GetAllByUser.
+func (mr *MockRepositoryMockRecorder) GetAllByUser(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByUser", reflect.TypeOf((*MockRepository)(nil).GetAllByUser), arg0, arg1, arg2)
+}
+
 // GetFromShort mocks base method.
 func (m *MockRepository) GetFromShort(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()

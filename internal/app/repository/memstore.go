@@ -124,8 +124,23 @@ func (r *MemStorageRepository) GetUser(ctx context.Context, id string) (user dom
 	}
 	return
 }
+
 func (r *MemStorageRepository) NewUser(ctx context.Context) (id string, err error) {
 	id = uuid.NewString()
 	r.Users[id] = userData{CreatedAt: time.Now()}
+	return
+}
+
+func (r *MemStorageRepository) GetAllByUser(ctx context.Context, userID, prefix string) (data []domain.StorageItem, err error) {
+	r.mg.Lock()
+	defer r.mg.Unlock()
+	for sk, item := range r.Data {
+		if item.userID == userID {
+			data = append(data, domain.StorageItem{
+				ShortURL:    prefix + sk.String(),
+				OriginalURL: item.url,
+			})
+		}
+	}
 	return
 }

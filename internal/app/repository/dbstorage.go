@@ -314,3 +314,22 @@ func (r *DBStorageRepo) NewUser(ctx context.Context) (id string, err error) {
 	err = r.db.GetContext(ctx, &id, sqlStr, args...)
 	return
 }
+
+func (r *DBStorageRepo) GetAllByUser(ctx context.Context, userID, prefix string) (data []domain.StorageItem, err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.
+		Select("'"+prefix+"' || short as short", "url").
+		From(constant.DBTableName).
+		Where(sqrl.Eq{"user_id": userID}).
+		ToSql(); err != nil {
+		return
+	}
+
+	if err = r.db.SelectContext(ctx, &data, sqlStr, args...); err != nil {
+		return
+	}
+	return
+}

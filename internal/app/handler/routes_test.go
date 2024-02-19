@@ -156,7 +156,6 @@ func TestHandler_GetShort(t *testing.T) {
 			require.NoError(t, err)
 
 			res, err := http.DefaultTransport.RoundTrip(req)
-			//res, err := http.DefaultClient.Do(req)
 
 			require.NoError(t, err)
 			var resBody []byte

@@ -63,7 +63,7 @@ func runServer(ctx context.Context) {
 
 	r := repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
 	s := service.NewService(r, conf)
-	h := handler.NewHandler(s, &conf.WEB)
+	h := handler.NewHandler(s, &conf.Auth)
 
 	if conf.FileStoragePath != "" && isNewDB {
 		data, err := r.Restore()
@@ -84,7 +84,7 @@ func runServer(ctx context.Context) {
 		Handler: h.Handler(),
 	}
 	lockDBCLose := make(chan struct{})
-	c.Add("WEB", server.Shutdown)
+	c.Add("Auth", server.Shutdown)
 	if conf.FileStoragePath != "" {
 		c.Add("FileStorage", func(ctx context.Context) error {
 			defer func() {

@@ -2,8 +2,6 @@ package handler
 
 import (
 	"compress/gzip"
-	"crypto/aes"
-	"crypto/cipher"
 	"encoding/hex"
 	"errors"
 	"net/http"
@@ -24,10 +22,10 @@ import (
 type Handler struct {
 	s service.Service
 	r *gin.Engine
-	c *config.WEB
+	c *config.Auth
 }
 
-func NewHandler(s service.Service, c *config.WEB) *Handler { return &Handler{s: s, c: c} }
+func NewHandler(s service.Service, c *config.Auth) *Handler { return &Handler{s: s, c: c} }
 
 func (h *Handler) Handler() http.Handler {
 	h.r = gin.New()
@@ -65,22 +63,14 @@ func (h *Handler) Auth() gin.HandlerFunc {
 			logrus.Error("Error get cookie", err)
 		}
 
-		aesBlock, err := aes.NewCipher(h.c.Key)
+		astc, nonce, err := h.c.AuthCipher()
 		if err != nil {
-			logrus.Error("cipher NewCipher error: ", err)
+			logrus.Error(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
-		astc, err := cipher.NewGCM(aesBlock)
-		if err != nil {
-			logrus.Error("cipher NewGCM error: ", err)
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
 		}
 
 		var (
-			nonce = h.c.Key[len(h.c.Key)-astc.NonceSize():]
-			user  domain.UserInfo
+			user domain.UserInfo
 		)
 
 		if authStr != "" {

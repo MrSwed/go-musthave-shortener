@@ -164,7 +164,7 @@ func (r *DBStorageRepo) GetAll(ctx context.Context) (data Store, err error) {
 	defer func() { err = rows.Close() }()
 	for rows.Next() {
 		var item = DBStorageItem{}
-		if err = rows.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
+		if err = rows.Scan(&item.UUID, &item.Short, &item.URL, &item.UserID); err != nil {
 			return
 		}
 		data[domain.ShortKey([]byte(item.Short))] = storeItem{

@@ -84,7 +84,7 @@ func runServer(ctx context.Context) {
 		Handler: h.Handler(),
 	}
 	lockDBCLose := make(chan struct{})
-	c.Add("Auth", server.Shutdown)
+	c.Add("WEB", server.Shutdown)
 	if conf.FileStoragePath != "" {
 		c.Add("FileStorage", func(ctx context.Context) error {
 			defer func() {

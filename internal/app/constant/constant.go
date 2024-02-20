@@ -27,5 +27,5 @@ const (
 	DBUsersTableName = "users"
 
 	CookieAuthName       = "AuthShortener"
-	ContextUserValueName = "user"
+	ContextUserValueName = "userID"
 )

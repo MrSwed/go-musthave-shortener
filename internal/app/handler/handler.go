@@ -32,18 +32,19 @@ func (h *Handler) Handler() http.Handler {
 	h.r.Use(logger.Logger())
 	h.r.Use(middleware.Compress(gzip.DefaultCompression))
 	h.r.Use(middleware.Decompress())
-	h.r.Use(h.Auth())
+	h.r.Use(h.getUserID())
 
 	h.r.NoRoute(func(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 	})
 	rootRoute := h.r.Group("/")
-	rootRoute.POST("", h.MakeShort())
 	rootRoute.GET("/ping", h.GetDBPing())
 	rootRoute.GET("/:id", h.GetShort())
+	rootRoute.POST("", h.setUserID(), h.MakeShort())
 
 	apiRoute := rootRoute.Group(constant.APIRoute)
 	shortAPIRoute := apiRoute.Group(constant.ShortenRoute)
+	shortAPIRoute.Use(h.setUserID())
 	shortAPIRoute.POST("", h.MakeShortJSON())
 	shortAPIRoute.POST(constant.BatchRoute, h.MakeShortBatch())
 
@@ -53,60 +54,68 @@ func (h *Handler) Handler() http.Handler {
 	return h.r
 }
 
-func (h *Handler) Auth() gin.HandlerFunc {
+func (h *Handler) getUserID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if h.c == nil {
-			logrus.Error("need config with secret key")
+			logrus.Error("need auth config")
 			c.Next()
 			return
 		}
-
 		authStr, err := c.Cookie(constant.CookieAuthName)
 		if err != nil && !errors.Is(err, http.ErrNoCookie) {
 			logrus.Error("Error get cookie", err)
 		}
-
 		astc, nonce, err := h.c.AuthCipher()
 		if err != nil {
 			logrus.Error(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 		}
-
-		var (
-			user domain.UserInfo
-		)
-
 		if authStr != "" {
 			authBytes, err := hex.DecodeString(authStr)
 			if err != nil {
 				logrus.Error("hex decode string error: ", err)
 			}
-
 			uuidBytes, err := astc.Open(nil, nonce, authBytes, nil)
 			if err != nil {
 				logrus.Error("ahead open error: ", err)
 			}
-
-			if user, err = h.s.GetUser(c, string(uuidBytes)); err != nil && !errors.Is(err, myErr.ErrNotExist) {
+			user, err := h.s.GetUser(c, string(uuidBytes))
+			if err != nil && !errors.Is(err, myErr.ErrNotExist) {
 				logrus.Error("get user error", err)
 			}
+			if user.ID != "" {
+				c.Set(constant.ContextUserValueName, user.ID)
+			}
 		}
+		c.Next()
+	}
+}
 
-		if user.ID == "" {
+func (h *Handler) setUserID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if h.c == nil {
+			logrus.Error("need auth config")
+			c.Next()
+			return
+		}
+		if _, ok := c.Value(constant.ContextUserValueName).(string); !ok {
+			astc, nonce, err := h.c.AuthCipher()
+			if err != nil {
+				logrus.Error(err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+			}
+			var (
+				user domain.UserInfo
+			)
 			if user.ID, err = h.s.NewUser(c); err != nil {
 				logrus.Error(err)
 			}
-
 			authBytes := astc.Seal(nil, nonce, []byte(user.ID), nil)
-			authStr = hex.EncodeToString(authBytes)
+			authStr := hex.EncodeToString(authBytes)
 			c.SetCookie(constant.CookieAuthName, authStr, 0, "", strings.Split(c.Request.Host, ":")[0], false, false)
-		}
 
-		if user.ID == "" { // or what ?
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
+			c.Set(constant.ContextUserValueName, user.ID)
 		}
-		c.Set(constant.ContextUserValueName, user.ID)
 		c.Next()
 	}
 }

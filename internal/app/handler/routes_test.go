@@ -55,7 +55,7 @@ var (
 
 func TestHandler_GetShort(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -156,7 +156,6 @@ func TestHandler_GetShort(t *testing.T) {
 			require.NoError(t, err)
 
 			res, err := http.DefaultTransport.RoundTrip(req)
-			//res, err := http.DefaultClient.Do(req)
 
 			require.NoError(t, err)
 			var resBody []byte
@@ -184,8 +183,7 @@ func TestHandler_GetShort(t *testing.T) {
 
 func TestHandler_MakeShort(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).
-		Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -281,7 +279,7 @@ func TestHandler_MakeShort(t *testing.T) {
 
 func TestHandler_MakeShortJSON(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -509,7 +507,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 }
 func TestHandler_MakeShortBatch(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()

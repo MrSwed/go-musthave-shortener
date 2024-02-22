@@ -13,12 +13,19 @@ const (
 	EnvBaseURLName         = "BASE_URL"
 	EnvFileStoragePathName = "FILE_STORAGE_PATH"
 	EnvNameDBDSN           = "DATABASE_DSN"
+	EnvNameKey             = "KEY"
 
 	ShortLen = 8
 
 	APIRoute     = "/api"
 	ShortenRoute = "/shorten"
 	BatchRoute   = "/batch"
+	UserRoute    = "/user"
+	URLsRoute    = "/urls"
 
-	DBTableName = "shortener"
+	DBTableName      = "shortener"
+	DBUsersTableName = "users"
+
+	CookieAuthName       = "AuthShortener"
+	ContextUserValueName = "userID"
 )

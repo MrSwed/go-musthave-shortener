@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/pquerna/ffjson/ffjson"
 )
 
-func (h *Handler) MakeShort() func(c *gin.Context) {
+func (h *Handler) MakeShort() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		url, err := c.GetRawData()
 		if len(url) == 0 {
@@ -24,7 +25,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 		}
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error get body")
+			logrus.WithField("Error", err).Error("Error get body")
 			return
 		}
 		var html string
@@ -32,7 +33,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 		defer cancel()
 		if html, err = h.s.NewShort(ctx, string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error create new short")
+			logrus.WithField("Error", err).Error("Error create new short")
 		}
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		status := http.StatusCreated
@@ -43,7 +44,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) MakeShortJSON() func(c *gin.Context) {
+func (h *Handler) MakeShortJSON() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			url    domain.CreateURL
@@ -64,7 +65,7 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 		defer cancel()
 		if result.Result, err = h.s.NewShort(ctx, url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error create new short")
+			logrus.WithField("Error", err).Error("Error create new short")
 		}
 		status := http.StatusCreated
 		if errors.Is(err, myErr.ErrAlreadyExist) {
@@ -74,7 +75,7 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) MakeShortBatch() func(c *gin.Context) {
+func (h *Handler) MakeShortBatch() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			input  []domain.ShortBatchInputItem
@@ -99,7 +100,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 				return
 			} else {
 				c.AbortWithStatus(http.StatusInternalServerError)
-				h.log.WithField("Error", err).Error("Error create new batch shorts")
+				logrus.WithField("Error", err).Error("Error create new batch shorts")
 				return
 			}
 		}
@@ -107,7 +108,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) GetShort() func(c *gin.Context) {
+func (h *Handler) GetShort() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
 		defer cancel()
@@ -116,7 +117,7 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 				c.AbortWithStatus(http.StatusBadRequest)
 			} else {
 				c.AbortWithStatus(http.StatusInternalServerError)
-				h.log.WithField("Error", err).Error("Error get new short")
+				logrus.WithField("Error", err).Error("Error get new short")
 			}
 			return
 		} else {
@@ -126,16 +127,42 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) GetDBPing() func(c *gin.Context) {
+func (h *Handler) GetDBPing() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 
 		if err := h.s.CheckDB(ctx); err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.Error("Error ", err)
+			logrus.Error("Error ", err)
 		} else {
 			c.String(http.StatusOK, "Status: ok")
 		}
+	}
+}
+
+func (h *Handler) GetAllByUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		userID := ""
+		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+			userID = u
+		}
+		if userID == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		data, err := h.s.GetAllByUser(ctx, userID)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			logrus.Error("Error ", err)
+			return
+		}
+		status := http.StatusOK
+		if len(data) == 0 {
+			status = http.StatusNoContent
+		}
+		c.JSON(status, data)
 	}
 }

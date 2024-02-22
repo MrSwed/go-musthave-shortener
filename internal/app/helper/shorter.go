@@ -1,9 +1,10 @@
 package helper
 
 import (
-	"math/rand"
-
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"crypto/rand"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	"math/big"
+	mrand "math/rand"
 )
 
 type RandShorter struct {
@@ -19,10 +20,14 @@ func NewRandShorter(src ...byte) *RandShorter {
 	}
 }
 
-func (r *RandShorter) RandStringBytes() config.ShortKey {
-	b := config.ShortKey{}
+func (r *RandShorter) RandStringBytes() domain.ShortKey {
+	b := domain.ShortKey{}
 	for i := range b {
-		b[i] = r.src[rand.Intn(len(r.src))]
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(r.src)-1)))
+		if err != nil {
+			num = big.NewInt(int64(mrand.Intn(len(r.src) - 1)))
+		}
+		b[i] = r.src[num.Int64()]
 	}
 	return b
 }

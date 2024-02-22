@@ -18,7 +18,7 @@ func (g *gzipWriter) Write(data []byte) (int, error) {
 	return g.writer.Write(data)
 }
 
-func Compress(level int, l logrus.FieldLogger) gin.HandlerFunc {
+func Compress(level int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !strings.Contains(c.Request.Header.Get("Accept-Encoding"), "gzip") {
 			c.Next()
@@ -26,13 +26,13 @@ func Compress(level int, l logrus.FieldLogger) gin.HandlerFunc {
 		}
 		gz, err := gzip.NewWriterLevel(c.Writer, level)
 		if err != nil {
-			l.WithError(err).Error("gzip")
+			logrus.WithError(err).Error("gzip")
 			c.Next()
 			return
 		}
 		defer func() {
 			if err := gz.Close(); err != nil {
-				l.WithError(err).Error("gzip")
+				logrus.WithError(err).Error("gzip")
 			}
 		}()
 
@@ -42,7 +42,7 @@ func Compress(level int, l logrus.FieldLogger) gin.HandlerFunc {
 	}
 }
 
-func Decompress(l logrus.FieldLogger) gin.HandlerFunc {
+func Decompress() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(c.Request.Body)
@@ -51,7 +51,7 @@ func Decompress(l logrus.FieldLogger) gin.HandlerFunc {
 				err = gz.Close()
 			}
 			if err != nil {
-				l.WithError(err).Error("gzip")
+				logrus.WithError(err).Error("gzip")
 			}
 		}
 		c.Next()

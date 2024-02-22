@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -29,7 +30,7 @@ func TestHandler_MockGetShort(t *testing.T) {
 	repo := mocks.NewMockRepository(ctrl)
 	conf := config.NewConfig()
 	s := service.NewService(repo, conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -41,6 +42,7 @@ func TestHandler_MockGetShort(t *testing.T) {
 	testShort1 := helper.NewRandShorter().RandStringBytes().String()
 	testShort2 := helper.NewRandShorter().RandStringBytes().String()
 
+	_ = repo.EXPECT().NewUser(gomock.Any()).Return(uuid.NewString(), nil).AnyTimes()
 	_ = repo.EXPECT().GetFromShort(gomock.Any(), testShort1).Return(testURL1, nil).AnyTimes()
 	_ = repo.EXPECT().GetFromShort(gomock.Any(), testShort2).Return(testURL2, nil).AnyTimes()
 	_ = repo.EXPECT().GetFromShort(gomock.Any(), gomock.Any()).Return("", myErr.ErrNotExist).AnyTimes()
@@ -132,7 +134,6 @@ func TestHandler_MockGetShort(t *testing.T) {
 			require.NoError(t, err)
 
 			res, err := http.DefaultTransport.RoundTrip(req)
-			//res, err := http.DefaultClient.Do(req)
 
 			require.NoError(t, err)
 			var resBody []byte
@@ -164,7 +165,7 @@ func TestHandler_MockMakeShort(t *testing.T) {
 	defer ctrl.Finish()
 	repo := mocks.NewMockRepository(ctrl)
 	s := service.NewService(repo, conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -173,6 +174,7 @@ func TestHandler_MockMakeShort(t *testing.T) {
 	testURL := "https://practicum.yandex.ru/"
 	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
+	_ = repo.EXPECT().NewUser(gomock.Any()).Return(uuid.NewString(), nil).AnyTimes()
 	_ = repo.EXPECT().NewShort(gomock.Any(), testURL).Return(testShortURL, nil).AnyTimes()
 	_ = repo.EXPECT().GetFromURL(gomock.Any(), testURL).Return("", nil).AnyTimes()
 
@@ -254,7 +256,7 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 	repo := mocks.NewMockRepository(ctrl)
 
 	s := service.NewService(repo, conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -264,6 +266,7 @@ func TestHandler_MockMakeShortJSON(t *testing.T) {
 
 	testShortURL := helper.NewRandShorter().RandStringBytes().String()
 
+	_ = repo.EXPECT().NewUser(gomock.Any()).Return(uuid.NewString(), nil).AnyTimes()
 	_ = repo.EXPECT().NewShort(gomock.Any(), testURL).Return(testShortURL, nil).AnyTimes()
 	_ = repo.EXPECT().NewShort(gomock.Any(), gomock.Any()).Return(helper.NewRandShorter().RandStringBytes().String(), nil).AnyTimes()
 	_ = repo.EXPECT().GetFromURL(gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()

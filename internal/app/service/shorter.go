@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
@@ -32,14 +33,12 @@ func NewShorterService(r repository.Repository, c *config.Config) ShorterService
 	return ShorterService{r: r, c: c}
 }
 
-func (s ShorterService) fulNewShort(short string) string {
-	return s.c.Scheme + s.c.BaseURL + "/" + short
-
-}
 func (s ShorterService) NewShort(ctx context.Context, url string) (newURL string, err error) {
 	var newShort string
 	if newShort, err = s.r.GetFromURL(ctx, url); err != nil {
-		return
+		if !errors.Is(err, myErr.ErrIsDeleted) {
+			return
+		}
 	}
 	if newShort != "" {
 		err = myErr.ErrAlreadyExist
@@ -47,7 +46,7 @@ func (s ShorterService) NewShort(ctx context.Context, url string) (newURL string
 		return
 	}
 
-	newURL = s.fulNewShort(newShort)
+	newURL = s.c.Scheme + s.c.BaseURL + "/" + newShort
 	return
 }
 

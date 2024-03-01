@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"runtime"
 	"sync"
 	"time"
 
@@ -82,7 +84,6 @@ func (r *MemStorageRepository) GetFromURL(ctx context.Context, url string) (v st
 		if item.url == url {
 			if item.isDeleted {
 				err = myErr.ErrIsDeleted
-				return
 			}
 			return sk.String(), nil
 		}
@@ -106,7 +107,7 @@ func (r *MemStorageRepository) RestoreAll(data Store) error {
 func (r *MemStorageRepository) NewShortBatch(ctx context.Context, input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
 	for _, i := range input {
 		var short string
-		if short, err = r.GetFromURL(ctx, i.OriginalURL); err != nil {
+		if short, err = r.GetFromURL(ctx, i.OriginalURL); err != nil && errors.Is(err, myErr.ErrIsDeleted) {
 			return
 		}
 		if short == "" {
@@ -156,23 +157,80 @@ func (r *MemStorageRepository) GetAllByUser(ctx context.Context, userID, prefix 
 
 func (r *MemStorageRepository) SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error) {
 
-	for _, s := range shorts {
-		shk, er := domain.NewShortKey(s)
-		if er != nil {
-			continue
-		}
-		if _, ok := r.Data[shk]; ok && r.Data[shk].userID == userID {
+	doneCh := make(chan struct{})
+	defer close(doneCh)
 
-			r.mg.Lock()
-			r.Data[shk] = storeItem{
-				uuid:      r.Data[shk].uuid,
-				url:       r.Data[shk].url,
-				userID:    r.Data[shk].userID,
-				isDeleted: delete,
+	shortsCh := make(chan string)
+	go func() {
+		defer close(shortsCh)
+		for _, short := range shorts {
+			select {
+			case <-doneCh:
+				return
+			case shortsCh <- short:
 			}
-			r.mg.Unlock()
-			n++
 		}
+	}()
+
+	numWorkers := runtime.NumCPU()
+	workChannels := make([]chan int, numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		delResultChannel := func(doneCh chan struct{}, shortsCh chan string) chan int {
+			itemDelResCh := make(chan int)
+			go func() {
+				defer close(itemDelResCh)
+				for short := range shortsCh {
+					result := 0
+					shk, er := domain.NewShortKey(short)
+					if er != nil {
+					} else if _, ok := r.Data[shk]; ok && r.Data[shk].userID == userID {
+						r.mg.Lock()
+						r.Data[shk] = storeItem{
+							uuid:      r.Data[shk].uuid,
+							url:       r.Data[shk].url,
+							userID:    r.Data[shk].userID,
+							isDeleted: delete,
+						}
+						r.mg.Unlock()
+						result = 1
+					}
+					select {
+					case <-doneCh:
+						return
+					case itemDelResCh <- result:
+					}
+				}
+			}()
+			return itemDelResCh
+		}(doneCh, shortsCh)
+		workChannels[i] = delResultChannel
 	}
+
+	finalCh := make(chan int)
+	var wg sync.WaitGroup
+	for _, ch := range workChannels {
+		chClosure := ch
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for data := range chClosure {
+				select {
+				case <-doneCh:
+					return
+				case finalCh <- data:
+				}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(finalCh)
+	}()
+
+	for res := range finalCh {
+		n = +int64(res)
+	}
+
 	return
 }

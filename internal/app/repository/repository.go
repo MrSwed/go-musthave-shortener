@@ -19,6 +19,7 @@ type DataStorage interface {
 	GetUser(ctx context.Context, id string) (domain.UserInfo, error)
 	NewUser(ctx context.Context) (string, error)
 	GetAllByUser(ctx context.Context, userID, prefix string) ([]domain.StorageItem, error)
+	SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error)
 }
 
 type Repository interface {

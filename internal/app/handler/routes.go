@@ -113,9 +113,12 @@ func (h *Handler) GetShort() gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if newURL, err := h.s.GetFromShort(ctx, c.Param("id")); err != nil {
-			if errors.Is(err, myErr.ErrNotExist) {
+			switch true {
+			case errors.Is(err, myErr.ErrIsDeleted):
+				c.AbortWithStatus(http.StatusGone)
+			case errors.Is(err, myErr.ErrNotExist):
 				c.AbortWithStatus(http.StatusBadRequest)
-			} else {
+			default:
 				c.AbortWithStatus(http.StatusInternalServerError)
 				logrus.WithField("Error", err).Error("Error get new short")
 			}
@@ -164,5 +167,41 @@ func (h *Handler) GetAllByUser() gin.HandlerFunc {
 			status = http.StatusNoContent
 		}
 		c.JSON(status, data)
+	}
+}
+
+func (h *Handler) SetDeleted() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		userID := ""
+		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+			userID = u
+		}
+		if userID == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		var (
+			inputShorts []string
+			err         error
+			body        []byte
+		)
+		if body, err = c.GetRawData(); err != nil || len(body) == 0 {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		if err = ffjson.NewDecoder().Decode(body, &inputShorts); err != nil || 0 == len(inputShorts) {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		_, err = h.s.SetDeleted(ctx, userID, true, inputShorts...)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"userID": userID, "delete": true, "shorts": inputShorts}).Error(err)
+			return
+		}
+		c.Status(http.StatusAccepted)
 	}
 }

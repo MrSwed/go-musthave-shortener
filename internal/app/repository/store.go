@@ -8,9 +8,10 @@ import (
 )
 
 type storeItem struct {
-	uuid   string
-	url    string
-	userID string
+	uuid      string
+	url       string
+	userID    string
+	isDeleted bool
 }
 
 type Store map[domain.ShortKey]storeItem

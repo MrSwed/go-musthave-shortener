@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
@@ -42,4 +43,17 @@ type ShortKey [constant.ShortLen]byte
 
 func (s ShortKey) String() string {
 	return string(s[:])
+}
+
+func NewShortKey(k string) (sk ShortKey, err error) {
+	if !IsValidShortKey(k) {
+		err = errors.New("not valid")
+		return
+	}
+	sk = ShortKey([]byte(k))
+	return
+}
+
+func IsValidShortKey(k string) bool {
+	return len([]byte(k)) == len(ShortKey{})
 }

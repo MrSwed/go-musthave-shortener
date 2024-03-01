@@ -50,6 +50,7 @@ func (h *Handler) Handler() http.Handler {
 
 	userAPIRoute := apiRoute.Group(constant.UserRoute)
 	userAPIRoute.GET(constant.URLsRoute, h.GetAllByUser())
+	userAPIRoute.DELETE(constant.URLsRoute, h.SetDeleted())
 
 	return h.r
 }

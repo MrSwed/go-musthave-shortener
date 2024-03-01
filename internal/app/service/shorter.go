@@ -20,6 +20,7 @@ type Shorter interface {
 	GetUser(ctx context.Context, id string) (domain.UserInfo, error)
 	NewUser(ctx context.Context) (string, error)
 	GetAllByUser(ctx context.Context, userID string) ([]domain.StorageItem, error)
+	SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error)
 }
 
 type ShorterService struct {
@@ -87,4 +88,8 @@ func (s ShorterService) NewUser(ctx context.Context) (id string, err error) {
 
 func (s ShorterService) GetAllByUser(ctx context.Context, userID string) ([]domain.StorageItem, error) {
 	return s.r.GetAllByUser(ctx, userID, s.c.Scheme+s.c.BaseURL+"/")
+}
+
+func (s ShorterService) SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error) {
+	return s.r.SetDeleted(ctx, userID, delete, shorts...)
 }

@@ -23,10 +23,11 @@ var (
 )
 
 type DBStorageItem struct {
-	UUID   string `db:"uuid"`
-	Short  string `db:"short"`
-	URL    string `db:"url"`
-	UserID string `db:"user_id,omitempty"`
+	UUID      string `db:"uuid"`
+	Short     string `db:"short"`
+	URL       string `db:"url"`
+	UserID    string `db:"user_id,omitempty"`
+	IsDeleted bool   `db:"is_deleted"`
 }
 
 func newDBStorageItem(ctx context.Context, attrs ...string) *DBStorageItem {
@@ -96,7 +97,7 @@ func (r *DBStorageRepo) NewShort(ctx context.Context, url string) (short string,
 }
 
 func (r *DBStorageRepo) GetFromShort(ctx context.Context, k string) (v string, err error) {
-	if len([]byte(k)) != len(domain.ShortKey{}) {
+	if !domain.IsValidShortKey(k) {
 		err = myErr.ErrNotExist
 		return
 	}
@@ -105,7 +106,7 @@ func (r *DBStorageRepo) GetFromShort(ctx context.Context, k string) (v string, e
 		args   []interface{}
 	)
 	if sqlStr, args, err = sq.
-		Select("uuid", "short", "url", "user_id").
+		Select("uuid", "short", "url", "user_id", "is_deleted").
 		From(constant.DBTableName).
 		Where(sqrl.Eq{"short": k}).
 		ToSql(); err != nil {
@@ -119,6 +120,10 @@ func (r *DBStorageRepo) GetFromShort(ctx context.Context, k string) (v string, e
 		return
 	}
 	v = item.URL
+	if item.IsDeleted {
+		err = myErr.ErrIsDeleted
+		return
+	}
 	return
 }
 
@@ -128,7 +133,7 @@ func (r *DBStorageRepo) GetFromURL(ctx context.Context, url string) (v string, e
 		args   []interface{}
 	)
 	if sqlStr, args, err = sq.
-		Select("uuid", "short", "url", "user_id").
+		Select("uuid", "short", "url", "user_id", "is_deleted").
 		From(constant.DBTableName).
 		Where(sqrl.Eq{"url": url}).
 		ToSql(); err != nil {
@@ -142,6 +147,9 @@ func (r *DBStorageRepo) GetFromURL(ctx context.Context, url string) (v string, e
 		return
 	}
 	v = item.Short
+	if item.IsDeleted {
+		err = myErr.ErrIsDeleted
+	}
 	return
 }
 
@@ -167,7 +175,11 @@ func (r *DBStorageRepo) GetAll(ctx context.Context) (data Store, err error) {
 		if err = rows.Scan(&item.UUID, &item.Short, &item.URL, &item.UserID); err != nil {
 			return
 		}
-		data[domain.ShortKey([]byte(item.Short))] = storeItem{
+		sk, er := domain.NewShortKey(item.Short)
+		if er != nil {
+			continue
+		}
+		data[sk] = storeItem{
 			uuid:   item.UUID,
 			url:    item.URL,
 			userID: item.UserID,
@@ -363,13 +375,32 @@ func (r *DBStorageRepo) GetAllByUser(ctx context.Context, userID, prefix string)
 	if sqlStr, args, err = sq.
 		Select("'"+prefix+"' || short as short", "url").
 		From(constant.DBTableName).
-		Where(sqrl.Eq{"user_id": userID}).
+		Where("user_id = $1 and is_deleted is not true", userID).
 		ToSql(); err != nil {
 		return
 	}
-
 	if err = r.db.SelectContext(ctx, &data, sqlStr, args...); err != nil {
 		return
 	}
 	return
+}
+
+func (r *DBStorageRepo) SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.
+		Update(constant.DBTableName).
+		Set("is_deleted", delete).
+		Where(sqrl.Eq{"user_id": userID, "short": shorts}).
+		ToSql(); err != nil {
+		return
+	}
+	var result sql.Result
+	if result, err = r.db.ExecContext(ctx, sqlStr, args...); err != nil {
+		return
+	}
+
+	return result.RowsAffected()
 }

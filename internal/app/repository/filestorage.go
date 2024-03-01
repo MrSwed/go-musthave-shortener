@@ -74,7 +74,7 @@ func (f *FileStorageRepository) Restore() (data Store, err error) {
 		return
 	}
 
-	for err == nil {
+	for {
 		var item *FileStorageItem
 		if item, err = r.ReadData(); err != nil {
 			if errors.Is(err, io.EOF) {
@@ -82,7 +82,11 @@ func (f *FileStorageRepository) Restore() (data Store, err error) {
 			}
 			return
 		}
-		data[domain.ShortKey([]byte(item.ShortURL))] = storeItem{
+		sk, er := domain.NewShortKey(item.ShortURL)
+		if er != nil {
+			continue
+		}
+		data[sk] = storeItem{
 			uuid:   item.UUID,
 			url:    item.OriginalURL,
 			userID: item.UserID,

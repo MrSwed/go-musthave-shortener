@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/closer"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/handler"
 	myMigrate "github.com/MrSwed/go-musthave-shortener/internal/app/migrate"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"

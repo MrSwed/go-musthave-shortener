@@ -58,15 +58,17 @@ func (r *MemStorageRepository) NewShort(ctx context.Context, url string) (short 
 }
 
 func (r *MemStorageRepository) GetFromShort(ctx context.Context, k string) (v string, err error) {
-	if len([]byte(k)) != len(domain.ShortKey{}) {
+	sk, er := domain.NewShortKey(k)
+	if er != nil {
 		err = myErr.ErrNotExist
 		return
 	}
-	sk := domain.ShortKey([]byte(k))
 	r.mg.RLock()
 	defer r.mg.RUnlock()
 	if item, ok := r.Data[sk]; !ok {
 		err = myErr.ErrNotExist
+	} else if item.isDeleted {
+		err = myErr.ErrIsDeleted
 	} else {
 		v = item.url
 	}
@@ -78,6 +80,10 @@ func (r *MemStorageRepository) GetFromURL(ctx context.Context, url string) (v st
 	defer r.mg.Unlock()
 	for sk, item := range r.Data {
 		if item.url == url {
+			if item.isDeleted {
+				err = myErr.ErrIsDeleted
+				return
+			}
 			return sk.String(), nil
 		}
 	}
@@ -138,11 +144,34 @@ func (r *MemStorageRepository) GetAllByUser(ctx context.Context, userID, prefix 
 	r.mg.Lock()
 	defer r.mg.Unlock()
 	for sk, item := range r.Data {
-		if item.userID == userID {
+		if item.userID == userID && !item.isDeleted {
 			data = append(data, domain.StorageItem{
 				ShortURL:    prefix + sk.String(),
 				OriginalURL: item.url,
 			})
+		}
+	}
+	return
+}
+
+func (r *MemStorageRepository) SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error) {
+
+	for _, s := range shorts {
+		shk, er := domain.NewShortKey(s)
+		if er != nil {
+			continue
+		}
+		if _, ok := r.Data[shk]; ok && r.Data[shk].userID == userID {
+
+			r.mg.Lock()
+			r.Data[shk] = storeItem{
+				uuid:      r.Data[shk].uuid,
+				url:       r.Data[shk].url,
+				userID:    r.Data[shk].userID,
+				isDeleted: delete,
+			}
+			r.mg.Unlock()
+			n++
 		}
 	}
 	return

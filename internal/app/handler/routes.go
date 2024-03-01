@@ -191,7 +191,7 @@ func (h *Handler) SetDeleted() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		if err = ffjson.NewDecoder().Decode(body, &inputShorts); err != nil || 0 == len(inputShorts) {
+		if err = ffjson.NewDecoder().Decode(body, &inputShorts); err != nil || len(inputShorts) == 0 {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}

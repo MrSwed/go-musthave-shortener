@@ -212,3 +212,23 @@ func (mr *MockRepositoryMockRecorder) Save(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), arg0)
 }
+
+// SetDeleted mocks base method.
+func (m *MockRepository) SetDeleted(arg0 context.Context, arg1 string, arg2 bool, arg3 ...string) (int64, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1, arg2}
+	for _, a := range arg3 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SetDeleted", varargs...)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetDeleted indicates an expected call of SetDeleted.
+func (mr *MockRepositoryMockRecorder) SetDeleted(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeleted", reflect.TypeOf((*MockRepository)(nil).SetDeleted), varargs...)
+}

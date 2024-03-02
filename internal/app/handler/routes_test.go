@@ -61,14 +61,26 @@ func TestHandler_GetShort(t *testing.T) {
 	defer ts.Close()
 
 	// save some values
+	userId := "9270395a-77b6-41cb-aacb-ce8552d7d27e"
+	c := context.Background()
+	ctx := context.WithValue(c, constant.ContextUserValueName, userId)
+
+	localURL := "http://" + baseURL + "/"
 	testURL1 := "https://practicum.yandex.ru/"
 	testURL2 := "https://practicum2.yandex.ru/"
-	localURL := "http://" + baseURL + "/"
-	ctx := context.TODO()
+	testURL3 := "https://practicum2.yandex.ru/?deleted"
+
 	testShort1, _ := s.NewShort(ctx, testURL1)
 	testShort2, _ := s.NewShort(ctx, testURL2)
+	testShort3, _ := s.NewShort(ctx, testURL3)
 	testShort1 = strings.ReplaceAll(testShort1, localURL, "")
 	testShort2 = strings.ReplaceAll(testShort2, localURL, "")
+	testShort3 = strings.ReplaceAll(testShort3, localURL, "")
+	setDeleteCount, err := s.SetDeleted(ctx, userId, true, testShort3)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	assert.Equal(t, int64(1), setDeleteCount)
 	type want struct {
 		code            int
 		responseContain string
@@ -145,6 +157,16 @@ func TestHandler_GetShort(t *testing.T) {
 			},
 			want: want{
 				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Get some deleted",
+			args: args{
+				method: http.MethodGet,
+				path:   "/" + testShort3,
+			},
+			want: want{
+				code: http.StatusGone,
 			},
 		},
 	}
@@ -651,3 +673,8 @@ func TestHandler_MakeShortBatch(t *testing.T) {
 		})
 	}
 }
+
+/*Todo:
+TestHandler_GetAllByUser
+TestHandler_SetDeleted
+*/

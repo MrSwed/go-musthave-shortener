@@ -173,26 +173,24 @@ func (r *MemStorageRepository) SetDeleted(ctx context.Context, userID string, de
 	}()
 
 	numWorkers := runtime.NumCPU()
-	workChannels := make([]chan int, numWorkers)
+	workChannels := make([]chan bool, numWorkers)
 	for i := 0; i < numWorkers; i++ {
-		delResultChannel := func(doneCh chan struct{}, shortsCh chan string) chan int {
-			itemDelResCh := make(chan int)
+		delResultChannel := func(doneCh chan struct{}, shortsCh chan string, userID string) chan bool {
+			itemDelResCh := make(chan bool)
 			go func() {
 				defer close(itemDelResCh)
 				for short := range shortsCh {
-					result := 0
+					var result bool
 					shk, er := domain.NewShortKey(short)
-					if er != nil {
-					} else if _, ok := r.Data[shk]; ok && r.Data[shk].userID == userID {
+					if er == nil {
 						r.mg.Lock()
-						r.Data[shk] = storeItem{
-							uuid:      r.Data[shk].uuid,
-							url:       r.Data[shk].url,
-							userID:    r.Data[shk].userID,
-							isDeleted: delete,
+						if _, ok := r.Data[shk]; ok && r.Data[shk].userID == userID {
+							store := r.Data[shk]
+							store.isDeleted = delete
+							r.Data[shk] = store
+							result = true
 						}
 						r.mg.Unlock()
-						result = 1
 					}
 					select {
 					case <-doneCh:
@@ -202,11 +200,11 @@ func (r *MemStorageRepository) SetDeleted(ctx context.Context, userID string, de
 				}
 			}()
 			return itemDelResCh
-		}(doneCh, shortsCh)
+		}(doneCh, shortsCh, userID)
 		workChannels[i] = delResultChannel
 	}
 
-	finalCh := make(chan int)
+	finalCh := make(chan bool)
 	var wg sync.WaitGroup
 	for _, ch := range workChannels {
 		chClosure := ch
@@ -229,7 +227,9 @@ func (r *MemStorageRepository) SetDeleted(ctx context.Context, userID string, de
 	}()
 
 	for res := range finalCh {
-		n = +int64(res)
+		if res {
+			n++
+		}
 	}
 
 	return

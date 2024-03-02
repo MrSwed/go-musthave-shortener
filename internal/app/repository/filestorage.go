@@ -1,10 +1,12 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
+	"github.com/google/uuid"
 	"io"
 	"os"
 	"sync"
@@ -19,7 +21,8 @@ type FileStorageItem struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
-	UserID      string `json:"user_id,omitempty"`
+	UserID      string `json:"user_id"`
+	IsDeleted   bool   `json:"is_deleted"`
 }
 
 type FileStorageRepository struct {
@@ -51,6 +54,7 @@ func (f *FileStorageRepository) Save(data Store) error {
 			ShortURL:    short.String(),
 			OriginalURL: item.url,
 			UserID:      item.userID,
+			IsDeleted:   item.isDeleted,
 		}
 		if err = s.WriteData(&fItem); err != nil {
 			return err
@@ -86,11 +90,12 @@ func (f *FileStorageRepository) Restore() (data Store, err error) {
 		if er != nil {
 			continue
 		}
-		data[sk] = storeItem{
-			uuid:   item.UUID,
-			url:    item.OriginalURL,
-			userID: item.UserID,
-		}
+		data[sk] = newStoreItem(context.Background(),
+			uuid.New().String(),
+			item.OriginalURL,
+			item.UserID,
+			item.IsDeleted,
+		)
 	}
 	err = r.Close()
 	return

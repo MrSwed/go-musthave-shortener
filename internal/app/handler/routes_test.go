@@ -61,9 +61,9 @@ func TestHandler_GetShort(t *testing.T) {
 	defer ts.Close()
 
 	// save some values
-	userId := "9270395a-77b6-41cb-aacb-ce8552d7d27e"
+	userID := "9270395a-77b6-41cb-aacb-ce8552d7d27e"
 	c := context.Background()
-	ctx := context.WithValue(c, constant.ContextUserValueName, userId)
+	ctx := context.WithValue(c, constant.ContextUserValueName, userID)
 
 	localURL := "http://" + baseURL + "/"
 	testURL1 := "https://practicum.yandex.ru/"
@@ -76,7 +76,7 @@ func TestHandler_GetShort(t *testing.T) {
 	testShort1 = strings.ReplaceAll(testShort1, localURL, "")
 	testShort2 = strings.ReplaceAll(testShort2, localURL, "")
 	testShort3 = strings.ReplaceAll(testShort3, localURL, "")
-	setDeleteCount, err := s.SetDeleted(ctx, userId, true, testShort3)
+	setDeleteCount, err := s.SetDeleted(ctx, userID, true, testShort3)
 	if err != nil {
 		assert.NoError(t, err)
 	}

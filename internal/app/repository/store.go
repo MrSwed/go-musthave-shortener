@@ -14,20 +14,29 @@ type storeItem struct {
 	isDeleted bool
 }
 
-type Store map[domain.ShortKey]storeItem
+type Store map[domain.ShortKey]*storeItem
 
-func newStoreItem(ctx context.Context, attrs ...string) storeItem {
-	att := make([]string, 3)
+func itfToString(i interface{}) (s string) {
+	s, _ = i.(string)
+	return
+}
+
+func newStoreItem(ctx context.Context, attrs ...interface{}) *storeItem {
+	att := make([]interface{}, 4)
 	copy(att, attrs)
-	if att[2] == "" {
+	if att[2] == nil {
 		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
 			att[2] = u
 		}
 	}
 
-	return storeItem{
-		uuid:   att[0],
-		url:    att[1],
-		userID: att[2],
+	return &storeItem{
+		uuid:   itfToString(att[0]),
+		url:    itfToString(att[1]),
+		userID: itfToString(att[2]),
+		isDeleted: func(i interface{}) (b bool) {
+			b, _ = i.(bool)
+			return
+		}(att[3]),
 	}
 }

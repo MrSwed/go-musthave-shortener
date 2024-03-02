@@ -179,11 +179,11 @@ func (r *DBStorageRepo) GetAll(ctx context.Context) (data Store, err error) {
 		if er != nil {
 			continue
 		}
-		data[sk] = storeItem{
-			uuid:   item.UUID,
-			url:    item.URL,
-			userID: item.UserID,
-		}
+		data[sk] = newStoreItem(ctx,
+			uuid.New().String(),
+			item.URL,
+			item.UserID,
+		)
 	}
 	err = rows.Err()
 	return

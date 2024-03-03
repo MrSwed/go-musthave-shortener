@@ -2,6 +2,7 @@ package handler
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/hex"
 	"errors"
 	"net/http"
@@ -85,7 +86,7 @@ func (h *Handler) getUserID() gin.HandlerFunc {
 				logrus.Error("get user error", err)
 			}
 			if user.ID != "" {
-				c.Set(constant.ContextUserValueName, user.ID)
+				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.ContextUserValueName, user.ID))
 			}
 		}
 		c.Next()
@@ -99,7 +100,8 @@ func (h *Handler) setUserID() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		if _, ok := c.Value(constant.ContextUserValueName).(string); !ok {
+		_, ok := c.Request.Context().Value(constant.ContextUserValueName).(string)
+		if !ok {
 			astc, nonce, err := h.c.AuthCipher()
 			if err != nil {
 				logrus.Error(err)
@@ -114,8 +116,7 @@ func (h *Handler) setUserID() gin.HandlerFunc {
 			authBytes := astc.Seal(nil, nonce, []byte(user.ID), nil)
 			authStr := hex.EncodeToString(authBytes)
 			c.SetCookie(constant.CookieAuthName, authStr, 0, "", strings.Split(c.Request.Host, ":")[0], false, false)
-
-			c.Set(constant.ContextUserValueName, user.ID)
+			c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.ContextUserValueName, user.ID))
 		}
 		c.Next()
 	}

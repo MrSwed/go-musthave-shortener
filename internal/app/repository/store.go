@@ -25,7 +25,8 @@ func newStoreItem(ctx context.Context, attrs ...interface{}) *storeItem {
 	att := make([]interface{}, 4)
 	copy(att, attrs)
 	if att[2] == nil {
-		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+		u, ok := ctx.Value(constant.ContextUserValueName).(string)
+		if ok {
 			att[2] = u
 		}
 	}

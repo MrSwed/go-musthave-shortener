@@ -29,7 +29,7 @@ func (h *Handler) MakeShort() gin.HandlerFunc {
 			return
 		}
 		var html string
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if html, err = h.s.NewShort(ctx, string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
@@ -61,7 +61,7 @@ func (h *Handler) MakeShortJSON() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if result.Result, err = h.s.NewShort(ctx, url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
@@ -92,7 +92,7 @@ func (h *Handler) MakeShortBatch() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if result, err = h.s.NewShortBatch(ctx, input); err != nil {
 			if errors.As(err, &validator.ValidationErrors{}) {
@@ -110,7 +110,7 @@ func (h *Handler) MakeShortBatch() gin.HandlerFunc {
 
 func (h *Handler) GetShort() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if newURL, err := h.s.GetFromShort(ctx, c.Param("id")); err != nil {
 			switch true {
@@ -132,7 +132,7 @@ func (h *Handler) GetShort() gin.HandlerFunc {
 
 func (h *Handler) GetDBPing() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 
 		if err := h.s.CheckDB(ctx); err != nil {
@@ -146,7 +146,7 @@ func (h *Handler) GetDBPing() gin.HandlerFunc {
 
 func (h *Handler) GetAllByUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		userID := ""
 		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
@@ -172,7 +172,7 @@ func (h *Handler) GetAllByUser() gin.HandlerFunc {
 
 func (h *Handler) SetDeleted() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		userID := ""
 		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {

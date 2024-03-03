@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"net/http"
@@ -61,7 +62,7 @@ func TestHandler_GetShort(t *testing.T) {
 	defer ts.Close()
 
 	// save some values
-	userID := "9270395a-77b6-41cb-aacb-ce8552d7d27e"
+	userID := uuid.New().String()
 	c := context.Background()
 	ctx := context.WithValue(c, constant.ContextUserValueName, userID)
 

@@ -26,6 +26,12 @@ const (
 	DBTableName      = "shortener"
 	DBUsersTableName = "users"
 
-	CookieAuthName       = "AuthShortener"
-	ContextUserValueName = "userID"
+	CookieAuthName              = "AuthShortener"
+	ContextUserValueName CtxKey = "userID"
 )
+
+type CtxKey string
+
+func (c CtxKey) String() string {
+	return string(c)
+}

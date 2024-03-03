@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-
+	"errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
@@ -18,6 +18,10 @@ type Shorter interface {
 	GetAll(ctx context.Context) (repository.Store, error)
 	RestoreAll(repository.Store) error
 	NewShortBatch(context.Context, []domain.ShortBatchInputItem) ([]domain.ShortBatchResultItem, error)
+	GetUser(ctx context.Context, id string) (domain.UserInfo, error)
+	NewUser(ctx context.Context) (string, error)
+	GetAllByUser(ctx context.Context, userID string) ([]domain.StorageItem, error)
+	SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error)
 }
 
 type ShorterService struct {
@@ -29,14 +33,12 @@ func NewShorterService(r repository.Repository, c *config.Config) ShorterService
 	return ShorterService{r: r, c: c}
 }
 
-func (s ShorterService) fulNewShort(short string) string {
-	return s.c.Scheme + s.c.BaseURL + "/" + short
-
-}
 func (s ShorterService) NewShort(ctx context.Context, url string) (newURL string, err error) {
 	var newShort string
 	if newShort, err = s.r.GetFromURL(ctx, url); err != nil {
-		return
+		if !errors.Is(err, myErr.ErrIsDeleted) {
+			return
+		}
 	}
 	if newShort != "" {
 		err = myErr.ErrAlreadyExist
@@ -44,7 +46,7 @@ func (s ShorterService) NewShort(ctx context.Context, url string) (newURL string
 		return
 	}
 
-	newURL = s.fulNewShort(newShort)
+	newURL = s.c.Scheme + s.c.BaseURL + "/" + newShort
 	return
 }
 
@@ -73,4 +75,20 @@ func (s ShorterService) NewShortBatch(ctx context.Context, input []domain.ShortB
 	}
 
 	return s.r.NewShortBatch(ctx, input, s.c.Scheme+s.c.BaseURL+"/")
+}
+
+func (s ShorterService) GetUser(ctx context.Context, id string) (user domain.UserInfo, err error) {
+	return s.r.GetUser(ctx, id)
+}
+
+func (s ShorterService) NewUser(ctx context.Context) (id string, err error) {
+	return s.r.NewUser(ctx)
+}
+
+func (s ShorterService) GetAllByUser(ctx context.Context, userID string) ([]domain.StorageItem, error) {
+	return s.r.GetAllByUser(ctx, userID, s.c.Scheme+s.c.BaseURL+"/")
+}
+
+func (s ShorterService) SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error) {
+	return s.r.SetDeleted(ctx, userID, delete, shorts...)
 }

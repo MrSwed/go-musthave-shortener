@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/pquerna/ffjson/ffjson"
 )
 
-func (h *Handler) MakeShort() func(c *gin.Context) {
+func (h *Handler) MakeShort() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		url, err := c.GetRawData()
 		if len(url) == 0 {
@@ -24,15 +25,15 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 		}
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error get body")
+			logrus.WithField("Error", err).Error("Error get body")
 			return
 		}
 		var html string
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if html, err = h.s.NewShort(ctx, string(url)); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error create new short")
+			logrus.WithField("Error", err).Error("Error create new short")
 		}
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		status := http.StatusCreated
@@ -43,7 +44,7 @@ func (h *Handler) MakeShort() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) MakeShortJSON() func(c *gin.Context) {
+func (h *Handler) MakeShortJSON() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			url    domain.CreateURL
@@ -60,11 +61,11 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if result.Result, err = h.s.NewShort(ctx, url.URL); err != nil && !errors.Is(err, myErr.ErrAlreadyExist) {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.WithField("Error", err).Error("Error create new short")
+			logrus.WithField("Error", err).Error("Error create new short")
 		}
 		status := http.StatusCreated
 		if errors.Is(err, myErr.ErrAlreadyExist) {
@@ -74,7 +75,7 @@ func (h *Handler) MakeShortJSON() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) MakeShortBatch() func(c *gin.Context) {
+func (h *Handler) MakeShortBatch() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			input  []domain.ShortBatchInputItem
@@ -91,7 +92,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if result, err = h.s.NewShortBatch(ctx, input); err != nil {
 			if errors.As(err, &validator.ValidationErrors{}) {
@@ -99,7 +100,7 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 				return
 			} else {
 				c.AbortWithStatus(http.StatusInternalServerError)
-				h.log.WithField("Error", err).Error("Error create new batch shorts")
+				logrus.WithField("Error", err).Error("Error create new batch shorts")
 				return
 			}
 		}
@@ -107,16 +108,19 @@ func (h *Handler) MakeShortBatch() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) GetShort() func(c *gin.Context) {
+func (h *Handler) GetShort() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 		if newURL, err := h.s.GetFromShort(ctx, c.Param("id")); err != nil {
-			if errors.Is(err, myErr.ErrNotExist) {
+			switch true {
+			case errors.Is(err, myErr.ErrIsDeleted):
+				c.AbortWithStatus(http.StatusGone)
+			case errors.Is(err, myErr.ErrNotExist):
 				c.AbortWithStatus(http.StatusBadRequest)
-			} else {
+			default:
 				c.AbortWithStatus(http.StatusInternalServerError)
-				h.log.WithField("Error", err).Error("Error get new short")
+				logrus.WithField("Error", err).Error("Error get new short")
 			}
 			return
 		} else {
@@ -126,16 +130,78 @@ func (h *Handler) GetShort() func(c *gin.Context) {
 	}
 }
 
-func (h *Handler) GetDBPing() func(c *gin.Context) {
+func (h *Handler) GetDBPing() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c, constant.ServerOperationTimeout*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
 		defer cancel()
 
 		if err := h.s.CheckDB(ctx); err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
-			h.log.Error("Error ", err)
+			logrus.Error("Error ", err)
 		} else {
 			c.String(http.StatusOK, "Status: ok")
 		}
+	}
+}
+
+func (h *Handler) GetAllByUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		userID := ""
+		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+			userID = u
+		}
+		if userID == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		data, err := h.s.GetAllByUser(ctx, userID)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			logrus.Error("Error ", err)
+			return
+		}
+		status := http.StatusOK
+		if len(data) == 0 {
+			status = http.StatusNoContent
+		}
+		c.JSON(status, data)
+	}
+}
+
+func (h *Handler) SetDeleted() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), constant.ServerOperationTimeout*time.Second)
+		defer cancel()
+		userID := ""
+		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+			userID = u
+		}
+		if userID == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		var (
+			inputShorts []string
+			err         error
+			body        []byte
+		)
+		if body, err = c.GetRawData(); err != nil || len(body) == 0 {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		if err = ffjson.NewDecoder().Decode(body, &inputShorts); err != nil || len(inputShorts) == 0 {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		_, err = h.s.SetDeleted(ctx, userID, true, inputShorts...)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"userID": userID, "delete": true, "shorts": inputShorts}).Error(err)
+			return
+		}
+		c.Status(http.StatusAccepted)
 	}
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/MrSwed/go-musthave-shortener/internal/app/closer"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/handler"
 	myMigrate "github.com/MrSwed/go-musthave-shortener/internal/app/migrate"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/repository"
@@ -56,14 +56,14 @@ func runServer(ctx context.Context) {
 		case errM == nil:
 			logrus.Info("DB migrate: new applied ", versions)
 		default:
-			logrus.WithError(err).Fatal("DB migrate: ", versions)
+			logrus.WithError(errM).Fatal("DB migrate: ", versions)
 		}
 		isNewDB = versions[0] == 0
 	}
 
 	r := repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db})
 	s := service.NewService(r, conf)
-	h := handler.NewHandler(s)
+	h := handler.NewHandler(s, &conf.Auth)
 
 	if conf.FileStoragePath != "" && isNewDB {
 		data, err := r.Restore()

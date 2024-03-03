@@ -51,6 +51,21 @@ func (mr *MockRepositoryMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockRepository)(nil).GetAll), arg0)
 }
 
+// GetAllByUser mocks base method.
+func (m *MockRepository) GetAllByUser(arg0 context.Context, arg1, arg2 string) ([]domain.StorageItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllByUser", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]domain.StorageItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllByUser indicates an expected call of GetAllByUser.
+func (mr *MockRepositoryMockRecorder) GetAllByUser(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByUser", reflect.TypeOf((*MockRepository)(nil).GetAllByUser), arg0, arg1, arg2)
+}
+
 // GetFromShort mocks base method.
 func (m *MockRepository) GetFromShort(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
@@ -81,6 +96,21 @@ func (mr *MockRepositoryMockRecorder) GetFromURL(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromURL", reflect.TypeOf((*MockRepository)(nil).GetFromURL), arg0, arg1)
 }
 
+// GetUser mocks base method.
+func (m *MockRepository) GetUser(arg0 context.Context, arg1 string) (domain.UserInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
+	ret0, _ := ret[0].(domain.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUser indicates an expected call of GetUser.
+func (mr *MockRepositoryMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockRepository)(nil).GetUser), arg0, arg1)
+}
+
 // NewShort mocks base method.
 func (m *MockRepository) NewShort(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
@@ -109,6 +139,21 @@ func (m *MockRepository) NewShortBatch(arg0 context.Context, arg1 []domain.Short
 func (mr *MockRepositoryMockRecorder) NewShortBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewShortBatch", reflect.TypeOf((*MockRepository)(nil).NewShortBatch), arg0, arg1, arg2)
+}
+
+// NewUser mocks base method.
+func (m *MockRepository) NewUser(arg0 context.Context) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewUser", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewUser indicates an expected call of NewUser.
+func (mr *MockRepositoryMockRecorder) NewUser(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewUser", reflect.TypeOf((*MockRepository)(nil).NewUser), arg0)
 }
 
 // Ping mocks base method.
@@ -166,4 +211,24 @@ func (m *MockRepository) Save(arg0 repository.Store) error {
 func (mr *MockRepositoryMockRecorder) Save(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), arg0)
+}
+
+// SetDeleted mocks base method.
+func (m *MockRepository) SetDeleted(arg0 context.Context, arg1 string, arg2 bool, arg3 ...string) (int64, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1, arg2}
+	for _, a := range arg3 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SetDeleted", varargs...)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetDeleted indicates an expected call of SetDeleted.
+func (mr *MockRepositoryMockRecorder) SetDeleted(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeleted", reflect.TypeOf((*MockRepository)(nil).SetDeleted), varargs...)
 }

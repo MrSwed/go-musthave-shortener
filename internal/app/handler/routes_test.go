@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"net/http"
@@ -55,20 +56,32 @@ var (
 
 func TestHandler_GetShort(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
 	// save some values
+	userID := uuid.New().String()
+	c := context.Background()
+	ctx := context.WithValue(c, constant.ContextUserValueName, userID)
+
+	localURL := "http://" + baseURL + "/"
 	testURL1 := "https://practicum.yandex.ru/"
 	testURL2 := "https://practicum2.yandex.ru/"
-	localURL := "http://" + baseURL + "/"
-	ctx := context.TODO()
+	testURL3 := "https://practicum2.yandex.ru/?deleted"
+
 	testShort1, _ := s.NewShort(ctx, testURL1)
 	testShort2, _ := s.NewShort(ctx, testURL2)
+	testShort3, _ := s.NewShort(ctx, testURL3)
 	testShort1 = strings.ReplaceAll(testShort1, localURL, "")
 	testShort2 = strings.ReplaceAll(testShort2, localURL, "")
+	testShort3 = strings.ReplaceAll(testShort3, localURL, "")
+	setDeleteCount, err := s.SetDeleted(ctx, userID, true, testShort3)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	assert.Equal(t, int64(1), setDeleteCount)
 	type want struct {
 		code            int
 		responseContain string
@@ -147,6 +160,16 @@ func TestHandler_GetShort(t *testing.T) {
 				code: http.StatusBadRequest,
 			},
 		},
+		{
+			name: "Get some deleted",
+			args: args{
+				method: http.MethodGet,
+				path:   "/" + testShort3,
+			},
+			want: want{
+				code: http.StatusGone,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -156,7 +179,6 @@ func TestHandler_GetShort(t *testing.T) {
 			require.NoError(t, err)
 
 			res, err := http.DefaultTransport.RoundTrip(req)
-			//res, err := http.DefaultClient.Do(req)
 
 			require.NoError(t, err)
 			var resBody []byte
@@ -184,8 +206,7 @@ func TestHandler_GetShort(t *testing.T) {
 
 func TestHandler_MakeShort(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).
-		Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -281,7 +302,7 @@ func TestHandler_MakeShort(t *testing.T) {
 
 func TestHandler_MakeShortJSON(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -509,7 +530,7 @@ func TestHandler_MakeShortJSON(t *testing.T) {
 }
 func TestHandler_MakeShortBatch(t *testing.T) {
 	s := service.NewService(repository.NewRepository(repository.Config{StorageFile: conf.FileStoragePath, DB: db}), conf)
-	h := NewHandler(s).Handler()
+	h := NewHandler(s, &conf.Auth).Handler()
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -653,3 +674,8 @@ func TestHandler_MakeShortBatch(t *testing.T) {
 		})
 	}
 }
+
+/*Todo:
+TestHandler_GetAllByUser
+TestHandler_SetDeleted
+*/

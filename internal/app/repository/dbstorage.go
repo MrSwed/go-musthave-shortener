@@ -5,21 +5,45 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
+	"github.com/google/uuid"
+
 	"github.com/MrSwed/go-musthave-shortener/internal/app/constant"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
 
+	sqrl "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 )
 
+var (
+	sq = sqrl.StatementBuilder.PlaceholderFormat(sqrl.Dollar)
+)
+
 type DBStorageItem struct {
-	UUID  string `db:"uuid"`
-	Short string `db:"short"`
-	URL   string `db:"url"`
+	UUID      string `db:"uuid"`
+	Short     string `db:"short"`
+	URL       string `db:"url"`
+	UserID    string `db:"user_id,omitempty"`
+	IsDeleted bool   `db:"is_deleted"`
+}
+
+func newDBStorageItem(ctx context.Context, attrs ...string) *DBStorageItem {
+	att := make([]string, 3)
+	copy(att, attrs)
+	if att[2] == "" {
+		if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+			att[2] = u
+		}
+	}
+
+	return &DBStorageItem{
+		Short:  att[0],
+		URL:    att[1],
+		UserID: att[2],
+	}
 }
 
 type DBStorageRepo struct {
@@ -39,9 +63,17 @@ func (r *DBStorageRepo) Ping(ctx context.Context) error {
 	return r.db.PingContext(ctx)
 }
 
-func (r *DBStorageRepo) saveNew(item DBStorageItem) (err error) {
-	_, err = r.db.Exec("insert into "+constant.DBTableName+" (short, url) values ($1, $2)",
-		item.Short, item.URL)
+func (r *DBStorageRepo) saveNew(ctx context.Context, item *DBStorageItem) (err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.Insert(constant.DBTableName).
+		Columns("short", "url", "user_id").
+		Values(item.Short, item.URL, item.UserID).ToSql(); err != nil {
+		return
+	}
+	_, err = r.db.ExecContext(ctx, sqlStr, args...)
 	return
 }
 
@@ -53,7 +85,7 @@ func (r *DBStorageRepo) NewShort(ctx context.Context, url string) (short string,
 			return
 		default:
 			newShort := helper.NewRandShorter().RandStringBytes().String()
-			if errS := r.saveNew(DBStorageItem{Short: newShort, URL: url}); errS == nil {
+			if errS := r.saveNew(ctx, newDBStorageItem(ctx, newShort, url)); errS == nil {
 				short = newShort
 				return
 			} else if errP, ok := errS.(*pgconn.PgError); !ok || errP.Code != pgerrcode.UniqueViolation {
@@ -65,38 +97,74 @@ func (r *DBStorageRepo) NewShort(ctx context.Context, url string) (short string,
 }
 
 func (r *DBStorageRepo) GetFromShort(ctx context.Context, k string) (v string, err error) {
-	if len([]byte(k)) != len(config.ShortKey{}) {
+	if !domain.IsValidShortKey(k) {
 		err = myErr.ErrNotExist
 		return
 	}
-	sqlStr := `SELECT uuid, short, url FROM ` + constant.DBTableName + ` WHERE short = $1`
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.
+		Select("uuid", "short", "url", "user_id", "is_deleted").
+		From(constant.DBTableName).
+		Where(sqrl.Eq{"short": k}).
+		ToSql(); err != nil {
+		return
+	}
 	var item = DBStorageItem{}
-	if err = r.db.GetContext(ctx, &item, sqlStr, k); err != nil {
+	if err = r.db.GetContext(ctx, &item, sqlStr, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = myErr.ErrNotExist
 		}
 		return
 	}
 	v = item.URL
+	if item.IsDeleted {
+		err = myErr.ErrIsDeleted
+		return
+	}
 	return
 }
 
 func (r *DBStorageRepo) GetFromURL(ctx context.Context, url string) (v string, err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.
+		Select("uuid", "short", "url", "user_id", "is_deleted").
+		From(constant.DBTableName).
+		Where(sqrl.Eq{"url": url}).
+		ToSql(); err != nil {
+		return
+	}
 	var item = DBStorageItem{}
-	sqlStr := `SELECT uuid, short, url FROM ` + constant.DBTableName + ` WHERE url = $1`
-	if err = r.db.GetContext(ctx, &item, sqlStr, url); err != nil {
+	if err = r.db.GetContext(ctx, &item, sqlStr, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
 		}
 		return
 	}
 	v = item.Short
+	if item.IsDeleted {
+		err = myErr.ErrIsDeleted
+	}
 	return
 }
 
 func (r *DBStorageRepo) GetAll(ctx context.Context) (data Store, err error) {
+	var (
+		sqlStr string
+	)
+	if sqlStr, _, err = sq.
+		Select("uuid", "short", "url", "user_id").
+		From(constant.DBTableName).
+		ToSql(); err != nil {
+		return
+	}
+
 	data = make(Store)
-	sqlStr := `SELECT uuid, short, url FROM ` + constant.DBTableName
 	var rows *sql.Rows
 	if rows, err = r.db.QueryContext(ctx, sqlStr); err != nil {
 		return
@@ -104,31 +172,80 @@ func (r *DBStorageRepo) GetAll(ctx context.Context) (data Store, err error) {
 	defer func() { err = rows.Close() }()
 	for rows.Next() {
 		var item = DBStorageItem{}
-		if err = rows.Scan(&item.UUID, &item.Short, &item.URL); err != nil {
+		if err = rows.Scan(&item.UUID, &item.Short, &item.URL, &item.UserID); err != nil {
 			return
 		}
-		data[config.ShortKey([]byte(item.Short))] = storeItem{
-			uuid: item.UUID,
-			url:  item.URL,
+		sk, er := domain.NewShortKey(item.Short)
+		if er != nil {
+			continue
 		}
+		data[sk] = newStoreItem(ctx,
+			uuid.New().String(),
+			item.URL,
+			item.UserID,
+		)
 	}
 	err = rows.Err()
 	return
 }
 
 func (r *DBStorageRepo) RestoreAll(data Store) (err error) {
+	var tx *sqlx.Tx
+
+	tx, err = r.db.Beginx()
+	if err != nil {
+		return
+	}
+	defer func() {
+		rErr := tx.Rollback()
+		if rErr != nil && !errors.Is(rErr, sql.ErrTxDone) {
+			err = errors.Join(err, rErr)
+		}
+	}()
+
 	for short, item := range data {
-		if err = r.saveNew(DBStorageItem{Short: short.String(), URL: item.url, UUID: item.uuid}); err != nil {
-			return err
+		var (
+			sqlStr string
+			args   []interface{}
+		)
+
+		if sqlStr, args, err = sq.
+			Insert(constant.DBTableName).
+			Columns("uuid", "short", "url", "user_id").
+			Values(item.uuid, short, item.url, item.userID).
+			ToSql(); err != nil {
+			return
+		}
+		if _, err = tx.Exec(sqlStr, args...); err != nil {
+			return
+		}
+		if item.userID != "" {
+			if sqlStr, args, err = sq.
+				Insert(constant.DBUsersTableName).
+				Columns("id").
+				Values(item.userID).
+				Suffix("ON CONFLICT (id) DO nothing").
+				ToSql(); err != nil {
+				return
+			}
+			if _, err = tx.Exec(sqlStr, args...); err != nil {
+				return
+			}
 		}
 	}
+
+	err = errors.Join(err, tx.Commit())
 	return
 }
 
 func (r *DBStorageRepo) NewShortBatch(ctx context.Context, input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
 	var (
-		tx *sqlx.Tx
+		tx     *sqlx.Tx
+		userID string
 	)
+	if u, ok := ctx.Value(constant.ContextUserValueName).(string); ok {
+		userID = u
+	}
 	tx, err = r.db.Beginx()
 	if err != nil {
 		return
@@ -143,8 +260,26 @@ func (r *DBStorageRepo) NewShortBatch(ctx context.Context, input []domain.ShortB
 
 	for _, i := range input {
 		for {
-			var newShort string
-			if err = tx.GetContext(ctx, &newShort, "select short from "+constant.DBTableName+" where url = $1", i.OriginalURL); err == nil {
+			select {
+			case <-ctx.Done():
+				err = ctx.Err()
+				return
+			default:
+			}
+			var (
+				sqlStr   string
+				args     []interface{}
+				newShort string
+			)
+			if sqlStr, args, err = sq.
+				Select("short").
+				From(constant.DBTableName).
+				Where(sqrl.Eq{"url": i.OriginalURL}).
+				ToSql(); err != nil {
+				return
+			}
+
+			if err = tx.GetContext(ctx, &newShort, sqlStr, args...); err == nil {
 				out = append(out, domain.ShortBatchResultItem{
 					CorrelationTD: i.CorrelationID,
 					ShortURL:      prefix + newShort,
@@ -153,13 +288,28 @@ func (r *DBStorageRepo) NewShortBatch(ctx context.Context, input []domain.ShortB
 			}
 			newShort = helper.NewRandShorter().RandStringBytes().String()
 			var exist int
-			if err = tx.GetContext(ctx, &exist, "select count(short) from "+constant.DBTableName+" where short = $1", newShort); err != nil {
+			if sqlStr, args, err = sq.
+				Select("count(short)").
+				From(constant.DBTableName).
+				Where(sqrl.Eq{"short": newShort}).
+				ToSql(); err != nil {
+				return
+			}
+
+			if err = tx.GetContext(ctx, &exist, sqlStr, args...); err != nil {
 				return
 			}
 			if exist > 0 {
 				continue
 			}
-			if _, err = tx.ExecContext(ctx, "INSERT INTO "+constant.DBTableName+" (short, url) VALUES($1, $2)", newShort, i.OriginalURL); err == nil {
+			if sqlStr, args, err = sq.
+				Insert(constant.DBTableName).
+				Columns("short", "url", "user_id").
+				Values(newShort, i.OriginalURL, userID).
+				ToSql(); err != nil {
+				return
+			}
+			if _, err = tx.ExecContext(ctx, sqlStr, args...); err == nil {
 				out = append(out, domain.ShortBatchResultItem{
 					CorrelationTD: i.CorrelationID,
 					ShortURL:      prefix + newShort,
@@ -169,7 +319,88 @@ func (r *DBStorageRepo) NewShortBatch(ctx context.Context, input []domain.ShortB
 				return
 			}
 		}
+
 	}
 	err = errors.Join(err, tx.Commit())
 	return
+}
+
+func (r *DBStorageRepo) GetUser(ctx context.Context, id string) (user domain.UserInfo, err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if _, err = uuid.Parse(id); err != nil {
+		err = myErr.ErrNotExist
+		return
+	}
+	if sqlStr, args, err = sq.
+		Select("id", "created_at").
+		From(constant.DBUsersTableName).
+		Where(sqrl.Eq{"id": id}).
+		ToSql(); err != nil {
+		return
+	}
+
+	if err = r.db.GetContext(ctx, &user, sqlStr, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = myErr.ErrNotExist
+		}
+	}
+
+	return
+}
+
+func (r *DBStorageRepo) NewUser(ctx context.Context) (id string, err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.Insert(constant.DBUsersTableName).
+		Columns("id").
+		Values(sqrl.Expr("DEFAULT")).
+		Suffix(`RETURNING "id"`).
+		ToSql(); err != nil {
+		return
+	}
+	err = r.db.GetContext(ctx, &id, sqlStr, args...)
+	return
+}
+
+func (r *DBStorageRepo) GetAllByUser(ctx context.Context, userID, prefix string) (data []domain.StorageItem, err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.
+		Select("'"+prefix+"' || short as short", "url").
+		From(constant.DBTableName).
+		Where("user_id = $1 and is_deleted is not true", userID).
+		ToSql(); err != nil {
+		return
+	}
+	if err = r.db.SelectContext(ctx, &data, sqlStr, args...); err != nil {
+		return
+	}
+	return
+}
+
+func (r *DBStorageRepo) SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error) {
+	var (
+		sqlStr string
+		args   []interface{}
+	)
+	if sqlStr, args, err = sq.
+		Update(constant.DBTableName).
+		Set("is_deleted", delete).
+		Where(sqrl.Eq{"user_id": userID, "short": shorts}).
+		ToSql(); err != nil {
+		return
+	}
+	var result sql.Result
+	if result, err = r.db.ExecContext(ctx, sqlStr, args...); err != nil {
+		return
+	}
+
+	return result.RowsAffected()
 }

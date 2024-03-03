@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"runtime"
 	"sync"
+	"time"
 
-	"github.com/MrSwed/go-musthave-shortener/internal/app/config"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/domain"
 	myErr "github.com/MrSwed/go-musthave-shortener/internal/app/errors"
 	"github.com/MrSwed/go-musthave-shortener/internal/app/helper"
@@ -12,14 +14,22 @@ import (
 	"github.com/google/uuid"
 )
 
+type userData struct {
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+}
+
+type users map[string]userData
+
 type MemStorageRepository struct {
-	Data Store
-	mg   sync.RWMutex
+	Data  Store
+	Users users
+	mg    sync.RWMutex
 }
 
 func NewMemRepository() *MemStorageRepository {
 	return &MemStorageRepository{
-		Data: make(Store),
+		Data:  make(Store),
+		Users: make(users),
 	}
 }
 
@@ -38,10 +48,10 @@ func (r *MemStorageRepository) NewShort(ctx context.Context, url string) (short 
 		default:
 			newShort := helper.NewRandShorter().RandStringBytes()
 			if _, exist := r.Data[newShort]; !exist {
-				r.Data[newShort] = storeItem{
-					uuid: uuid.New().String(),
-					url:  url,
-				}
+				r.Data[newShort] = newStoreItem(ctx,
+					uuid.New().String(),
+					url,
+				)
 				short = newShort.String()
 				return
 			}
@@ -50,15 +60,17 @@ func (r *MemStorageRepository) NewShort(ctx context.Context, url string) (short 
 }
 
 func (r *MemStorageRepository) GetFromShort(ctx context.Context, k string) (v string, err error) {
-	if len([]byte(k)) != len(config.ShortKey{}) {
+	sk, er := domain.NewShortKey(k)
+	if er != nil {
 		err = myErr.ErrNotExist
 		return
 	}
-	sk := config.ShortKey([]byte(k))
 	r.mg.RLock()
 	defer r.mg.RUnlock()
 	if item, ok := r.Data[sk]; !ok {
 		err = myErr.ErrNotExist
+	} else if item.isDeleted {
+		err = myErr.ErrIsDeleted
 	} else {
 		v = item.url
 	}
@@ -70,6 +82,9 @@ func (r *MemStorageRepository) GetFromURL(ctx context.Context, url string) (v st
 	defer r.mg.Unlock()
 	for sk, item := range r.Data {
 		if item.url == url {
+			if item.isDeleted {
+				err = myErr.ErrIsDeleted
+			}
 			return sk.String(), nil
 		}
 	}
@@ -83,13 +98,16 @@ func (r *MemStorageRepository) GetAll(ctx context.Context) (Store, error) {
 
 func (r *MemStorageRepository) RestoreAll(data Store) error {
 	r.Data = data
+	for _, v := range data {
+		r.Users[v.userID] = userData{CreatedAt: time.Now()}
+	}
 	return nil
 }
 
 func (r *MemStorageRepository) NewShortBatch(ctx context.Context, input []domain.ShortBatchInputItem, prefix string) (out []domain.ShortBatchResultItem, err error) {
 	for _, i := range input {
 		var short string
-		if short, err = r.GetFromURL(ctx, i.OriginalURL); err != nil {
+		if short, err = r.GetFromURL(ctx, i.OriginalURL); err != nil && errors.Is(err, myErr.ErrIsDeleted) {
 			return
 		}
 		if short == "" {
@@ -102,5 +120,117 @@ func (r *MemStorageRepository) NewShortBatch(ctx context.Context, input []domain
 			ShortURL:      prefix + short,
 		})
 	}
+	return
+}
+
+func (r *MemStorageRepository) GetUser(ctx context.Context, id string) (user domain.UserInfo, err error) {
+	if u, ok := r.Users[id]; ok {
+		user = domain.UserInfo{
+			ID:        id,
+			CreatedAt: u.CreatedAt,
+		}
+	} else {
+		err = myErr.ErrNotExist
+	}
+	return
+}
+
+func (r *MemStorageRepository) NewUser(ctx context.Context) (id string, err error) {
+	id = uuid.NewString()
+	r.Users[id] = userData{CreatedAt: time.Now()}
+	return
+}
+
+func (r *MemStorageRepository) GetAllByUser(ctx context.Context, userID, prefix string) (data []domain.StorageItem, err error) {
+	r.mg.Lock()
+	defer r.mg.Unlock()
+	for sk, item := range r.Data {
+		if item.userID == userID && !item.isDeleted {
+			data = append(data, domain.StorageItem{
+				ShortURL:    prefix + sk.String(),
+				OriginalURL: item.url,
+			})
+		}
+	}
+	return
+}
+
+func (r *MemStorageRepository) SetDeleted(ctx context.Context, userID string, delete bool, shorts ...string) (n int64, err error) {
+
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+
+	shortsCh := make(chan string)
+	go func() {
+		defer close(shortsCh)
+		for _, short := range shorts {
+			select {
+			case <-doneCh:
+				return
+			case shortsCh <- short:
+			}
+		}
+	}()
+
+	numWorkers := runtime.NumCPU()
+	workChannels := make([]chan bool, numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		delResultChannel := func(doneCh chan struct{}, shortsCh chan string, userID string) chan bool {
+			itemDelResCh := make(chan bool)
+			go func() {
+				defer close(itemDelResCh)
+				for short := range shortsCh {
+					var result bool
+					shk, er := domain.NewShortKey(short)
+					if er == nil {
+						r.mg.Lock()
+						if _, ok := r.Data[shk]; ok && r.Data[shk].userID == userID {
+							store := r.Data[shk]
+							store.isDeleted = delete
+							r.Data[shk] = store
+							result = true
+						}
+						r.mg.Unlock()
+					}
+					select {
+					case <-doneCh:
+						return
+					case itemDelResCh <- result:
+					}
+				}
+			}()
+			return itemDelResCh
+		}(doneCh, shortsCh, userID)
+		workChannels[i] = delResultChannel
+	}
+
+	finalCh := make(chan bool)
+	var wg sync.WaitGroup
+	for _, ch := range workChannels {
+		chClosure := ch
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for data := range chClosure {
+				select {
+				case <-doneCh:
+					return
+				case finalCh <- data:
+				}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(finalCh)
+	}()
+
+	for res := range finalCh {
+		if res {
+			n++
+		}
+	}
+
 	return
 }
